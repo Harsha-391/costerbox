@@ -1,0 +1,42 @@
+/* src/styles/globals.css */
+
+/* --- BRAND PALETTE --- */
+:root {
+  /* Primary: Warm Beige / Muted Gold */
+  --brand-gold: #CBB799; 
+  
+  /* Backgrounds */
+  --brand-ivory: #F9F9F7; 
+  --brand-white: #FFFFFF;
+  
+  /* Text */
+  --text-charcoal: #2C2C2C; /* Slightly softer than pure black */
+  --text-grey: #666666;
+  
+  /* Spacing Standard */
+  --spacing-unit: 80px;
+}
+
+/* --- GLOBAL RESET --- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Lato', sans-serif;
+  background-color: var(--brand-ivory);
+  color: var(--text-charcoal);
+  overflow-x: hidden;
+  line-height: 1.8;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Playfair Display', serif;
+  color: var(--text-charcoal);
+  font-weight: 400;
+}
+
+a { text-decoration: none; color: inherit; transition: 0.4s ease; }
+
+/* --- GLOBAL UTILITIES --- */
+.container { max-width: 1300px; margin: 0 auto; padding: 0 40px; }
+.flex { display: flex; flex-wrap: wrap; }
+.grid { display: grid; }
