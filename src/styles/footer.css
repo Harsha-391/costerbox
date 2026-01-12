@@ -14,16 +14,8 @@ footer {
   margin-bottom: 60px;
 }
 
-.footer-brand h2 { color: var(--text-main); font-size: 24px; margin-bottom: 20px; }
-.footer-brand p { font-size: 14px; max-width: 300px; color: var(--text-main); opacity: 0.8; }
-
-.footer-links h4 { color: var(--text-main); font-family: 'Lato'; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
-.footer-links ul li { margin-bottom: 15px; font-size: 14px; list-style: none; }
-.footer-links ul li a { color: var(--text-main); opacity: 0.8; }
-.footer-links ul li a:hover { opacity: 1; text-decoration: underline;}
-
-.contact-info p { margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; gap: 10px; opacity: 0.8;}
-.contact-info i { color: var(--text-main); }
+.footer-brand h2 { margin-bottom: 20px; }
+.footer-links ul li { margin-bottom: 15px; list-style: none; }
 
 .footer-bottom {
   border-top: 1px solid rgba(0,0,0,0.1);
@@ -31,6 +23,27 @@ footer {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--text-main);
   opacity: 0.7;
+}
+
+/* --- MOBILE UPDATE --- */
+@media (max-width: 768px) {
+  footer { padding: 60px 20px 30px; }
+  
+  /* Center everything on mobile */
+  .footer-content { text-align: center; gap: 30px; }
+  
+  .footer-brand p, 
+  .contact-info p { 
+    margin: 0 auto 10px auto; 
+    justify-content: center; /* Centers the icon + text */
+  }
+
+  /* Stack bottom credits */
+  .footer-bottom { 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 10px; 
+    text-align: center;
+  }
 }

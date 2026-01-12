@@ -107,7 +107,8 @@ export default function HomePage() {
                 />
                 <div className="founder-info">
                   <strong>Sumit K. Soni</strong>
-                  <span>Founder & CEO</span>
+
+                  <span> (Founder & CEO)</span>
                 </div>
               </div>
 
@@ -120,7 +121,7 @@ export default function HomePage() {
                 />
                 <div className="founder-info">
                   <strong>Sukhadev Dewasi</strong>
-                  <span>Co-Founder & CFO</span>
+                  <span> (Co-Founder & CFO)</span>
                 </div>
               </div>
 
