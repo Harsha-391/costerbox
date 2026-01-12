@@ -24,7 +24,20 @@ export default function Footer() {
         <div className="footer-links">
           <h4>Connect</h4>
           <div className="contact-info">
-            <p><i className="fas fa-map-marker-alt"></i> Bhamashah Techno Hub, Jaipur</p> 
+            {/* --- UPDATED SECTION START --- */}
+            <p>
+              <i className="fas fa-map-marker-alt"></i> 
+              {/* This opens the map in a new tab */}
+              <a 
+                href="https://www.google.com/maps/search/?api=1&query=Bhamashah+Techno+Hub+Jaipur" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ marginLeft: '10px', color: 'inherit', textDecoration: 'none' }}
+              >Bhamashah Techno Hub, Jaipur
+              </a>
+            </p> 
+            {/* --- UPDATED SECTION END --- */}
+
             <p><i className="fas fa-phone"></i> +91 63775 15507</p> 
             <p><i className="fas fa-envelope"></i> support@costerbox.in</p> 
           </div>
@@ -41,6 +54,7 @@ export default function Footer() {
 
       <div className="footer-bottom">
         <span>&copy; 2024 Costerbox Private Limited.</span> 
+        <span>Developed & Managed by Sneeze.Media.</span>
         <span>Designed for Premium Utility</span>
       </div>
     </footer>
