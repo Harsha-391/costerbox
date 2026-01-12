@@ -1,30 +1,16 @@
 /* src/app/page.jsx */
 "use client";
 import React from 'react';
-import '../styles/home.css'; // Importing your design
+import '../styles/home.css';
 
 export default function HomePage() {
   return (
     <>
-      {/* Navigation */}
-      <nav className="nav-container">
-        <div className="nav-left">
-          <a href="#shop" className="nav-link">Shop</a>
-          <a href="#archives" className="nav-link">Archives</a>
-        </div>
-        
-        <div className="brand-logo">
-          Costerbox
-        </div>
+      {/* NOTE: The <Header /> is now in layout.js 
+        It will automatically appear above this section.
+      */}
 
-        <div className="nav-right">
-          <a href="#about" className="nav-link">About</a>
-          <a href="#contact" className="nav-link">Contact</a>
-          <a href="#" className="nav-link"><i className="fas fa-shopping-cart"></i> (0)</a>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
+      {/* 1. Hero Section */}
       <header className="hero-split">
         <div className="hero-content">
           <span className="overline">Est. 2024 • Jaipur, India</span>
@@ -38,11 +24,11 @@ export default function HomePage() {
           </div>
         </div>
         <div className="hero-visual">
-          {/* Background Image handled in CSS */}
+          {/* Background Image is handled in src/styles/home.css */}
         </div>
       </header>
 
-      {/* Collection Selector */}
+      {/* 2. Collections Section */}
       <section id="collections" className="collections-split">
         
         <div className="collection-block">
@@ -67,7 +53,7 @@ export default function HomePage() {
 
       </section>
 
-      {/* Ethos Section */}
+      {/* 3. Ethos / About Section */}
       <section id="about" className="container ethos-section">
         <div className="ethos-grid">
           <div className="ethos-image">
@@ -101,72 +87,51 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Founders Section */}
+      {/* 4. Founders Section */}
       <section className="founders-section">
         <div className="container">
           <div className="founders-card">
             <h3>Built on Vision & Integrity</h3>
-            <p style={{marginTop: '20px', fontStyle: 'italic'}}>
+            <p style={{marginTop: '20px', fontStyle: 'italic', color: '#555'}}>
               "To build a culturally rooted yet modern brand that presents traditional art forms in an elegant, refined, and relevant way."
             </p>
             
             <div className="founders-names">
-              <div className="founder">
-                <strong>Sumit K. Soni</strong>
-                <span>Founder & CEO</span>
+              
+              <div className="founder-profile">
+                {/* Ensure you have this image in public/founder1.jpg later */}
+                <img 
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop" 
+                  alt="Sumit K. Soni" 
+                  className="founder-img" 
+                />
+                <div className="founder-info">
+                  <strong>Sumit K. Soni</strong>
+                  <span>Founder & CEO</span>
+                </div>
               </div>
-              <div className="founder">
-                <strong>Sukhadev Dewasi</strong>
-                <span>Co-Founder & CFO</span>
+
+              <div className="founder-profile">
+                {/* Ensure you have this image in public/founder2.jpg later */}
+                <img 
+                  src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop" 
+                  alt="Sukhadev Dewasi" 
+                  className="founder-img" 
+                />
+                <div className="founder-info">
+                  <strong>Sukhadev Dewasi</strong>
+                  <span>Co-Founder & CFO</span>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer id="contact">
-        <div className="footer-content">
-          
-          <div className="footer-brand">
-            <h2>Costerbox</h2>
-            <p>Reinterpreting traditional tribal and folk art into contemporary products.</p>
-          </div>
-
-          <div className="footer-links">
-            <h4>Customer Care</h4>
-            <ul>
-              <li><a href="#">Contact Us</a></li>
-              <li><a href="#">Shipping & Returns</a></li> 
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Sizing Guide</a></li>
-            </ul>
-          </div>
-
-          <div className="footer-links">
-            <h4>Connect</h4>
-            <div className="contact-info">
-              <p><i className="fas fa-map-marker-alt"></i> Bhamashah Techno Hub, Jaipur</p> 
-              <p><i className="fas fa-phone"></i> +91 63775 15507</p> 
-              <p><i className="fas fa-envelope"></i> support@costerbox.in</p> 
-            </div>
-          </div>
-
-          <div className="footer-links">
-            <h4>Social</h4>
-            <ul>
-              <li><a href="https://instagram.com/costerbox">Instagram</a></li> 
-              <li><a href="#">WhatsApp</a></li> 
-            </ul>
-          </div>
-
-        </div>
-
-        <div className="footer-bottom">
-          <span>&copy; 2024 Costerbox Private Limited.</span> 
-          <span>Designed for Premium Utility</span>
-        </div>
-      </footer>
+      {/* NOTE: The <Footer /> is now in layout.js 
+        It will automatically appear below this section.
+      */}
     </>
   );
 }

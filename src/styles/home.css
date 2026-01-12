@@ -6,7 +6,7 @@
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 3px;
-  color: var(--brand-gold);
+  color: var(--text-muted);
   font-weight: 700;
   display: block;
   margin-bottom: 15px;
@@ -16,9 +16,9 @@
 .btn-editorial {
   display: inline-block;
   padding: 15px 40px;
-  border: 1px solid var(--text-charcoal);
+  border: 1px solid var(--text-main);
   background: transparent;
-  color: var(--text-charcoal);
+  color: var(--text-main);
   font-family: 'Lato', sans-serif;
   text-transform: uppercase;
   font-size: 11px;
@@ -32,42 +32,48 @@
   content: '';
   position: absolute;
   top: 0; left: 0; width: 0%; height: 100%;
-  background-color: var(--brand-gold);
+  background-color: var(--text-main);
   z-index: -1;
   transition: width 0.4s ease;
 }
 
 .btn-editorial:hover {
-  border-color: var(--brand-gold);
-  color: var(--brand-white);
+  border-color: var(--text-main);
+  color: var(--brand-beige);
 }
 
 .btn-editorial:hover::before {
   width: 100%;
 }
 
-/* --- NAVIGATION --- */
+/* --- NAVIGATION (Centered Logo) --- */
 .nav-container {
-  padding: 30px 40px;
+  padding: 10px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--brand-ivory);
+  background-color: var(--brand-beige); /* MATCHES LOGO BG */
   position: relative;
   z-index: 100;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .nav-left, .nav-right { flex: 1; display: flex; gap: 30px; }
 .nav-right { justify-content: flex-end; }
 
 .brand-logo {
-  font-family: 'Playfair Display', serif;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-charcoal);
-  text-align: center;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-img {
+  max-height: 140px;
+  width: auto;
+  display: block;
+  /* This blends the JPG background into the beige nav bar */
+  mix-blend-mode: multiply; 
 }
 
 .nav-link {
@@ -75,7 +81,10 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   position: relative;
+  color: var(--text-main);
   cursor: pointer;
+  /* Visual alignment fix */
+  margin-top: 5px; 
 }
 
 .nav-link::after {
@@ -83,7 +92,7 @@
   display: block;
   width: 0;
   height: 1px;
-  background: var(--brand-gold);
+  background: var(--text-main);
   transition: width 0.3s;
 }
 .nav-link:hover::after { width: 100%; }
@@ -106,7 +115,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 80px;
-  background-color: var(--brand-ivory);
+  background-color: var(--brand-cream);
 }
 
 .hero-content h1 {
@@ -116,7 +125,7 @@
 }
 
 .hero-content p {
-  color: var(--text-grey);
+  color: var(--text-muted);
   margin-bottom: 40px;
   max-width: 400px;
   font-size: 1.1rem;
@@ -178,7 +187,7 @@
 }
 
 .ethos-text h2 { font-size: 2.5rem; margin-bottom: 30px; }
-.ethos-text p { color: var(--text-grey); margin-bottom: 20px; }
+.ethos-text p { color: var(--text-muted); margin-bottom: 20px; }
 
 .ethos-details {
   display: grid;
@@ -188,28 +197,30 @@
 }
 
 .ethos-item {
-  border-left: 2px solid var(--brand-gold);
+  border-left: 2px solid var(--brand-beige);
   padding-left: 15px;
 }
 
 .ethos-item h5 { font-family: 'Lato'; font-weight: 700; text-transform: uppercase; font-size: 12px; margin-bottom: 5px; }
-.ethos-item p { font-size: 13px; color: var(--text-grey); }
+.ethos-item p { font-size: 13px; color: var(--text-muted); }
 
-/* --- FOUNDERS --- */
+/* --- FOUNDERS SECTION (Redesigned) --- */
 .founders-section {
-  background-color: var(--brand-ivory);
+  background-color: var(--brand-cream);
   padding: var(--spacing-unit) 0;
   text-align: center;
 }
 
 .founders-card {
   background: var(--brand-white);
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 60px;
   border: 1px solid #eee;
   position: relative;
 }
+
+.founders-card h3 { margin-bottom: 20px; }
 
 .founders-card::before {
   content: '"';
@@ -219,27 +230,57 @@
   transform: translateX(-50%);
   font-family: 'Playfair Display';
   font-size: 100px;
-  color: var(--brand-gold);
-  opacity: 0.2;
+  color: var(--brand-beige);
+  opacity: 0.5;
   line-height: 0;
 }
 
 .founders-names {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  margin-top: 30px;
+  gap: 60px;
+  margin-top: 50px;
+  flex-wrap: wrap;
 }
 
-.founder { text-align: left; }
-.founder strong { display: block; font-family: 'Playfair Display'; font-size: 1.2rem; }
-.founder span { font-size: 0.85rem; color: var(--text-grey); text-transform: uppercase; letter-spacing: 1px; }
+.founder-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.founder-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%; /* Circular Image */
+  object-fit: cover;
+  border: 3px solid var(--brand-beige);
+  margin-bottom: 5px;
+}
+
+.founder-info strong { 
+  display: block; 
+  font-family: 'Playfair Display'; 
+  font-size: 1.3rem; 
+  margin-bottom: 5px;
+}
+
+.founder-info span { 
+  font-size: 0.85rem; 
+  color: var(--text-muted); 
+  text-transform: uppercase; 
+  letter-spacing: 1px; 
+  font-weight: 700;
+}
 
 /* --- FOOTER --- */
 footer {
-  background-color: var(--text-charcoal);
-  color: #ccc;
+  background-color: var(--brand-beige);
+  color: var(--text-main);
   padding: 80px 40px 30px;
+  border-top: 1px solid rgba(0,0,0,0.05);
 }
 
 .footer-content {
@@ -249,24 +290,25 @@ footer {
   margin-bottom: 60px;
 }
 
-.footer-brand h2 { color: var(--brand-gold); font-size: 24px; margin-bottom: 20px; }
-.footer-brand p { font-size: 14px; max-width: 300px; }
+.footer-brand h2 { color: var(--text-main); font-size: 24px; margin-bottom: 20px; }
+.footer-brand p { font-size: 14px; max-width: 300px; color: var(--text-main); opacity: 0.8; }
 
-.footer-links h4 { color: var(--brand-white); font-family: 'Lato'; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
-.footer-links ul { list-style: none; }
-.footer-links ul li { margin-bottom: 15px; font-size: 14px; }
-.footer-links ul li a:hover { color: var(--brand-gold); }
+.footer-links h4 { color: var(--text-main); font-family: 'Lato'; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
+.footer-links ul li { margin-bottom: 15px; font-size: 14px; list-style: none; }
+.footer-links ul li a { color: var(--text-main); opacity: 0.8; }
+.footer-links ul li a:hover { opacity: 1; text-decoration: underline;}
 
-.contact-info p { margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
-.contact-info i { color: var(--brand-gold); }
+.contact-info p { margin-bottom: 10px; font-size: 14px; display: flex; align-items: center; gap: 10px; opacity: 0.8;}
+.contact-info i { color: var(--text-main); }
 
 .footer-bottom {
-  border-top: 1px solid #444;
+  border-top: 1px solid rgba(0,0,0,0.1);
   padding-top: 30px;
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #777;
+  color: var(--text-main);
+  opacity: 0.7;
 }
 
 /* --- RESPONSIVE --- */
@@ -275,6 +317,8 @@ footer {
   .hero-visual { height: 400px; order: -1; }
   .collections-split { grid-template-columns: 1fr; }
   .ethos-grid { grid-template-columns: 1fr; }
-  .nav-container { flex-direction: column; gap: 20px; }
-  .nav-left, .nav-right { display: none; }
+  .nav-container { flex-direction: row; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .brand-logo { order: -1; width: 100%; margin-bottom: 10px; }
+  .nav-left, .nav-right { display: flex; gap: 15px; justify-content: center; width: auto; }
+  .founders-names { gap: 30px; }
 }

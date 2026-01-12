@@ -1,0 +1,56 @@
+/* src/styles/header.css */
+
+/* --- NAVIGATION --- */
+.nav-container {
+  padding: 10px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--brand-beige);
+  position: relative;
+  z-index: 100;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.nav-left, .nav-right { flex: 1; display: flex; gap: 30px; }
+.nav-right { justify-content: flex-end; }
+
+.brand-logo {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-img {
+  max-height: 140px;
+  width: auto;
+  display: block;
+  mix-blend-mode: multiply; 
+}
+
+.nav-link {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  color: var(--text-main);
+  cursor: pointer;
+  margin-top: 5px; 
+}
+
+.nav-link::after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 1px;
+  background: var(--text-main);
+  transition: width 0.3s;
+}
+.nav-link:hover::after { width: 100%; }
+
+@media (max-width: 900px) {
+  .nav-container { flex-direction: row; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .brand-logo { order: -1; width: 100%; margin-bottom: 10px; }
+  .nav-left, .nav-right { display: flex; gap: 15px; justify-content: center; width: auto; }
+}

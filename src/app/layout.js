@@ -1,5 +1,7 @@
 /* src/app/layout.js */
 import '../styles/globals.css';
+import Header from '../components/Header'; // Import your new component
+import Footer from '../components/Footer'; // Import your new component
 
 export const metadata = {
   title: 'Costerbox | Curated Tribal Modernism',
@@ -23,7 +25,11 @@ export default function RootLayout({ children }) {
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Header />  {/* <-- Fixed at the top */}
+          {children}  {/* <-- This is where page.jsx loads */}
+        <Footer />  {/* <-- Fixed at the bottom */}
+      </body>
     </html>
   );
 }
