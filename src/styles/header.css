@@ -2,130 +2,149 @@
 
 /* --- LAYOUT CONTAINER --- */
 .nav-wrapper {
-  background-color: var(--brand-beige);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  position: relative;
-  z-index: 1000;
-  padding-bottom: 20px;
-  padding-top: 20px;
+    /* Changed from var(--brand-beige) to var(--brand-white) */
+    background-color: var(--brand-white);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    z-index: 1000;
+    padding-bottom: 20px;
+    padding-top: 20px;
 }
 
 .nav-bar {
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 10px 40px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 100px; /* Fixed height for consistency */
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100px; /* Fixed height for consistency */
 }
 
 /* --- LOGO (Center) --- */
 .brand-logo {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .logo-img {
-  max-height: 140px;
-  width: auto;
-  display: block;
-  mix-blend-mode: multiply; 
+    max-height: 140px;
+    width: auto;
+    display: block;
+    mix-blend-mode: multiply;
 }
 
 /* --- DESKTOP LINKS --- */
 .desktop-links-left, .desktop-links-right {
-  flex: 1;
-  display: flex;
-  gap: 30px;
+    flex: 1;
+    display: flex;
+    gap: 30px;
 }
-.desktop-links-right { justify-content: flex-end; }
+
+.desktop-links-right {
+    justify-content: flex-end;
+}
 
 .nav-link {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-main);
-  cursor: pointer;
-  position: relative;
-  margin-top: 5px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-main);
+    cursor: pointer;
+    position: relative;
+    margin-top: 5px;
 }
-.nav-link:hover { opacity: 0.7; }
+
+    .nav-link:hover {
+        opacity: 0.7;
+    }
 
 /* --- MOBILE ELEMENTS (Hidden on Desktop) --- */
-.mobile-toggle { display: none; }
-.mobile-cart { display: none; }
-.mobile-menu-expansion { display: none; }
+.mobile-toggle {
+    display: none;
+}
+
+.mobile-cart {
+    display: none;
+}
+
+.mobile-menu-expansion {
+    display: none;
+}
 
 /* =========================================
    MOBILE RESPONSIVE STYLES
    ========================================= */
 @media (max-width: 900px) {
-  
-  .nav-bar {
-    padding: 0 20px;
-    height: 70px; /* Smaller height for mobile */
-    /* THE 3-COLUMN MAGIC: Menu | Logo | Cart */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
 
-  /* 1. LEFT: Hamburger Menu */
-  .mobile-toggle {
-    display: block;
-    font-size: 22px;
-    cursor: pointer;
-    width: 40px; /* Fixed width to balance layout */
-  }
+    .nav-bar {
+        padding: 0 20px;
+        height: 70px; /* Smaller height for mobile */
+        /* THE 3-COLUMN MAGIC: Menu | Logo | Cart */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-  /* 2. CENTER: Logo */
-  .brand-logo {
-    flex: unset; /* Don't stretch */
-  }
-  .logo-img { max-height: 50px; }
+    /* 1. LEFT: Hamburger Menu */
+    .mobile-toggle {
+        display: block;
+        font-size: 22px;
+        cursor: pointer;
+        width: 40px; /* Fixed width to balance layout */
+    }
 
-  /* 3. RIGHT: Cart Icon */
-  .mobile-cart {
-    display: block;
-    font-size: 15px; /* Slightly smaller than menu icon */
-    width: 40px; /* Fixed width to match menu width */
-    text-align: right;
-  }
+    /* 2. CENTER: Logo */
+    .brand-logo {
+        flex: unset; /* Don't stretch */
+    }
 
-  /* HIDE Desktop Links */
-  .desktop-links-left, 
-  .desktop-links-right {
-    display: none;
-  }
+    .logo-img {
+        max-height: 50px;
+    }
 
-  /* --- EXPANSION MENU (Slide Down) --- */
-  .mobile-menu-expansion {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--brand-beige);
-    border-top: 1px solid rgba(0,0,0,0.05);
-    overflow: hidden;
-    max-height: 0; /* Hidden by default */
-    transition: max-height 0.4s ease-in-out;
-  }
+    /* 3. RIGHT: Cart Icon */
+    .mobile-cart {
+        display: block;
+        font-size: 15px; /* Slightly smaller than menu icon */
+        width: 40px; /* Fixed width to match menu width */
+        text-align: right;
+    }
 
-  .mobile-menu-expansion.open {
-    display: flex;
-    max-height: 300px; /* Open height */
-    padding-bottom: 20px;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-  }
+    /* HIDE Desktop Links */
+    .desktop-links-left,
+    .desktop-links-right {
+        display: none;
+    }
 
-  .mobile-menu-expansion a {
-    padding: 15px;
-    text-align: center;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 1px solid rgba(0,0,0,0.03);
-    color: var(--text-main);
-  }
+    /* --- EXPANSION MENU (Slide Down) --- */
+    .mobile-menu-expansion {
+        display: flex;
+        flex-direction: column;
+        /* Changed from var(--brand-beige) to var(--brand-white) */
+        background-color: var(--brand-white);
+        border-top: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+        max-height: 0; /* Hidden by default */
+        transition: max-height 0.4s ease-in-out;
+    }
+
+        .mobile-menu-expansion.open {
+            display: flex;
+            max-height: 300px; /* Open height */
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu-expansion a {
+            padding: 15px;
+            text-align: center;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
+            color: var(--text-main);
+        }
 }
