@@ -1,6 +1,7 @@
 // src/components/Header.jsx
 "use client";
 import React, { useState } from 'react';
+import Link from 'next/link'; // 1. Import Next.js Link
 import '../styles/header.css';
 
 export default function Header() {
@@ -18,25 +19,32 @@ export default function Header() {
 
         {/* 2. Desktop Left Links (Hidden on Mobile) */}
         <div className="desktop-links-left">
-          <a href="/" className="nav-link">Shop</a>
-          <a href="#archives" className="nav-link">Archives</a>
+          {/* Use Link for internal pages */}
+          <Link href="/" className="nav-link">Shop</Link>
+          
+          {/* Use /#id for sections on the Homepage so they work from the About page */}
+          <Link href="/#archives" className="nav-link">Archives</Link>
         </div>
         
         {/* 3. Logo (Center) */}
         <div className="brand-logo">
-          <img src="/logo.png" alt="Costerbox Logo" className="logo-img" />
+          <Link href="/">
+            <img src="/logo.png" alt="Costerbox Logo" className="logo-img" />
+          </Link>
         </div>
 
         {/* 4. Desktop Right Links (Hidden on Mobile) */}
         <div className="desktop-links-right">
-          <a href="#about" className="nav-link">About</a>
-          <a href="#contact" className="nav-link">Contact</a>
+          {/* LINK TO YOUR NEW ABOUT PAGE */}
+          <Link href="/about" className="nav-link">About</Link>
+          
+         <Link href="/contact" className="nav-link">Contact</Link>
           <a href="#" className="nav-link"><i className="fas fa-shopping-cart"></i> (0)</a>
         </div>
 
         {/* 5. Mobile Cart Icon (Right - Only Mobile) */}
         <div className="mobile-cart">
-           <a href="#" style={{ color: 'inherit' }}><i className="fas fa-shopping-cart"></i> (0)</a>
+            <a href="#" style={{ color: 'inherit' }}><i className="fas fa-shopping-cart"></i> (0)</a>
         </div>
 
       </div>
@@ -44,10 +52,13 @@ export default function Header() {
       {/* --- MOBILE EXPANSION MENU (Slide Down) --- */}
       {/* Only visible when isMenuOpen is true AND on mobile */}
       <div className={`mobile-menu-expansion ${isMenuOpen ? 'open' : ''}`}>
-        <a href="/" onClick={() => setIsMenuOpen(false)}>Shop</a>
-        <a href="#archives" onClick={() => setIsMenuOpen(false)}>Archives</a>
-        <a href="#about" onClick={() => setIsMenuOpen(false)}>About</a>
-        <a href="#contact" onClick={() => setIsMenuOpen(false)}>Contact</a>
+        <Link href="/" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+        <Link href="/#archives" onClick={() => setIsMenuOpen(false)}>Archives</Link>
+        
+        {/* Mobile About Link */}
+        <Link href="/about" onClick={() => setIsMenuOpen(false)}>About</Link>
+        
+        <Link href="/contact" onClick={() => setIsMenuOpen(false)}>Contact</Link>
       </div>
     </nav>
   );
