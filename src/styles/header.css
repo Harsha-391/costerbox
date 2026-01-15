@@ -2,7 +2,6 @@
 
 /* --- LAYOUT CONTAINER --- */
 .nav-wrapper {
-    /* Changed from var(--brand-beige) to var(--brand-white) */
     background-color: var(--brand-white);
     border-bottom: 1px solid rgba(0,0,0,0.05);
     position: relative;
@@ -18,7 +17,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 100px; /* Fixed height for consistency */
+    height: 100px; 
 }
 
 /* --- LOGO (Center) --- */
@@ -55,11 +54,12 @@
     cursor: pointer;
     position: relative;
     margin-top: 5px;
+    text-decoration: none; /* Ensure no underline */
 }
 
-    .nav-link:hover {
-        opacity: 0.7;
-    }
+.nav-link:hover {
+    opacity: 0.7;
+}
 
 /* --- MOBILE ELEMENTS (Hidden on Desktop) --- */
 .mobile-toggle {
@@ -74,6 +74,10 @@
     display: none;
 }
 
+.mobile-overlay {
+    display: none;
+}
+
 /* =========================================
    MOBILE RESPONSIVE STYLES
    ========================================= */
@@ -81,8 +85,7 @@
 
     .nav-bar {
         padding: 0 20px;
-        height: 70px; /* Smaller height for mobile */
-        /* THE 3-COLUMN MAGIC: Menu | Logo | Cart */
+        height: 70px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -93,12 +96,13 @@
         display: block;
         font-size: 22px;
         cursor: pointer;
-        width: 40px; /* Fixed width to balance layout */
+        width: 40px;
+        z-index: 1001; /* Ensure clickable */
     }
 
     /* 2. CENTER: Logo */
     .brand-logo {
-        flex: unset; /* Don't stretch */
+        flex: unset; 
     }
 
     .logo-img {
@@ -108,8 +112,8 @@
     /* 3. RIGHT: Cart Icon */
     .mobile-cart {
         display: block;
-        font-size: 15px; /* Slightly smaller than menu icon */
-        width: 40px; /* Fixed width to match menu width */
+        font-size: 15px;
+        width: 40px;
         text-align: right;
     }
 
@@ -119,32 +123,84 @@
         display: none;
     }
 
-    /* --- EXPANSION MENU (Slide Down) --- */
+    /* --- EXPANSION MENU (SIDEBAR FROM LEFT) --- */
     .mobile-menu-expansion {
-        display: flex;
+        display: flex; /* Always flex, visibility handled by transform */
         flex-direction: column;
-        /* Changed from var(--brand-beige) to var(--brand-white) */
+        
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px; /* Width of the sidebar */
+        
         background-color: var(--brand-white);
-        border-top: 1px solid rgba(0,0,0,0.05);
-        overflow: hidden;
-        max-height: 0; /* Hidden by default */
-        transition: max-height 0.4s ease-in-out;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        z-index: 2000; /* Sit on top of everything */
+        
+        /* Animation: Slide from Left */
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
     }
 
-        .mobile-menu-expansion.open {
-            display: flex;
-            max-height: 300px; /* Open height */
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
+    .mobile-menu-expansion.open {
+        transform: translateX(0); /* Slide In */
+    }
 
-        .mobile-menu-expansion a {
-            padding: 15px;
-            text-align: center;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(0,0,0,0.03);
-            color: var(--text-main);
-        }
+    /* Sidebar Header (Close Button) */
+    .mobile-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        background-color: #fcfcfc;
+    }
+
+    .menu-title {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-weight: 700;
+        color: var(--text-muted);
+    }
+
+    .mobile-menu-close {
+        font-size: 20px;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    /* Sidebar Links */
+    .mobile-menu-expansion a {
+        padding: 20px;
+        text-align: left; /* Align left for sidebar */
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        color: var(--text-main);
+        text-decoration: none;
+    }
+
+    /* --- OVERLAY BACKDROP --- */
+    .mobile-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5); /* Dark background */
+        z-index: 1500; /* Behind menu, above content */
+        
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease;
+    }
+
+    .mobile-overlay.open {
+        opacity: 1;
+        visibility: visible;
+    }
 }
