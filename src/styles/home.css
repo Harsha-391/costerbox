@@ -1,6 +1,6 @@
 /* src/styles/home.css */
 
-/* Keep existing Button & Typo styles... */
+/* --- TYPOGRAPHY & UTILS --- */
 .overline {
   font-family: 'Lato', sans-serif;
   text-transform: uppercase;
@@ -10,6 +10,14 @@
   font-weight: 700;
   display: block;
   margin-bottom: 15px;
+}
+
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 50px;
+  color: var(--text-main);
 }
 
 .btn-editorial {
@@ -22,17 +30,29 @@
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 2px;
-  position: relative;
-  z-index: 1;
+  text-decoration: none;
+  transition: 0.3s;
   cursor: pointer;
 }
-.btn-editorial:hover { background: var(--text-main); color: var(--brand-beige); }
+.btn-editorial:hover { background: var(--text-main); color: var(--brand-white); }
+
+.link-underline {
+  font-family: 'Lato', sans-serif;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--text-main);
+  padding-bottom: 3px;
+}
 
 /* --- HERO SECTION --- */
 .hero-split {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  min-height: 85vh;
+  grid-template-columns: 1fr 1fr;
+  min-height: 70vh; 
+  background-color: var(--brand-cream);
 }
 
 .hero-visual {
@@ -43,81 +63,215 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start; /* Ensures button aligns left with text */
   padding: 80px;
+}
+
+.hero-content h1 { 
+  font-size: 3.5rem; 
+  line-height: 1.1; 
+  margin-bottom: 30px; 
+}
+
+/* FIXED: Button Layout in Hero */
+.hero-content .btn-editorial {
+  margin-top: 20px; /* Adds space between text and button */
+  min-width: 200px; /* Ensures button has a nice width */
+  text-align: center;
+}
+
+/* --- SHOP BY CATEGORY (Circular) --- */
+.category-section {
+  padding: 80px 0;
+  background-color: #fff;
+}
+
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px;
+}
+
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-main);
+  width: 150px; 
+}
+
+.cat-img-wrapper {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%; /* CIRCLE SHAPE */
+  overflow: hidden;
+  margin-bottom: 15px;
+  border: 1px solid transparent;
+  transition: 0.3s;
+}
+
+.cat-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: 0.5s;
+}
+
+.category-item:hover .cat-img-wrapper { border-color: var(--brand-beige); }
+.category-item:hover img { transform: scale(1.1); }
+
+.category-item span {
+  font-family: 'Lato', sans-serif;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+/* --- PRODUCTS GRID --- */
+.products-section {
+  padding: 80px 0;
   background-color: var(--brand-cream);
 }
 
-.hero-content h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 30px; }
-
-/* --- COLLECTIONS --- */
-.collections-split { display: grid; grid-template-columns: 1fr 1fr; }
-
-.collection-block {
-  position: relative;
-  height: 600px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: #fff;
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 40px;
 }
-.collection-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transition: transform 0.8s ease; }
-.bg-main { background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1479064555552-3ef4979f8908?q=80&w=2070&auto=format&fit=crop') center/cover; }
-.bg-archive { background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1606103920295-9a091573f160?q=80&w=2070&auto=format&fit=crop') center/cover; }
 
-.collection-info { position: relative; z-index: 2; padding: 40px; background: rgba(0,0,0,0.2); backdrop-filter: blur(2px); }
-.collection-info h3 { font-size: 2.5rem; margin-bottom: 10px; }
+.product-card {
+  background: #fff;
+  padding-bottom: 15px;
+  transition: 0.3s;
+}
 
-/* --- ETHOS & FOUNDERS --- */
-.ethos-section { padding: 80px 0; background-color: var(--brand-white); }
-.ethos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.p-image {
+  width: 100%;
+  height: 400px; /* Tall editorial look */
+  overflow: hidden;
+  position: relative;
+}
 
-.founders-section { padding: 80px 0; text-align: center; }
-.founders-names { display: flex; justify-content: center; gap: 60px; margin-top: 50px; }
-.founder-img { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 3px solid var(--brand-beige); }
+.p-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: 0.5s;
+}
 
-/* --- MOBILE RESPONSIVE UPDATES --- */@media (max-width: 900px) {
+.product-card:hover .p-image img { transform: scale(1.05); }
+
+.tag-new {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--text-main);
+  color: #fff;
+  padding: 5px 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.p-details {
+  padding: 20px 15px 0;
+  text-align: center;
+}
+
+.p-details h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+  color: var(--text-main);
+}
+
+.p-details .price {
+  font-family: 'Lato', sans-serif;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* --- ABOUT SPLIT (FIXED IMAGE SIZE) --- */
+.about-split-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  background-color: #fff;
+}
+
+.about-split-content {
+  padding: 80px;
+}
+
+.about-split-content h2 { font-size: 2.5rem; margin-bottom: 30px; }
+.about-split-content p { color: var(--text-muted); margin-bottom: 25px; line-height: 1.6; }
+
+/* FIXED: Image Container */
+.about-split-image {
+  width: 100%;
+  height: 500px; /* Fixed height prevents it from being "so big" */
+  overflow: hidden;
+}
+
+/* FIXED: Image Fitting */
+.about-split-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures image covers area without stretching or being huge */
+  display: block;
+}
+
+/* --- TESTIMONIALS --- */
+.testimonials-section {
+  padding: 100px 0;
+  text-align: center;
+  background-color: var(--brand-cream);
+}
+
+.testimonial-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  max-width: 900px;
+  margin: 40px auto 0;
+}
+
+.testimonial-card p {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  font-style: italic;
+  margin-bottom: 20px;
+  color: var(--text-main);
+}
+
+.testimonial-card h5 {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+  /* Stack Grids */
+  .hero-split, .about-split-section { grid-template-columns: 1fr; }
   
-  /* 1. Hero: Stack Vertically */
-  .hero-split { grid-template-columns: 1fr; min-height: auto; }
-  .hero-visual { height: 400px; order: -1; }
-  .hero-content { padding: 40px 20px; text-align: center; }
-  .hero-content h1 { font-size: 2.5rem; }
-
-  /* 2. Collections: Stack Vertically */
-  .collections-split { grid-template-columns: 1fr; }
-  .collection-block { height: 400px; }
-
-  /* 3. Ethos: Stack Vertically */
-  .ethos-grid { grid-template-columns: 1fr; gap: 30px; }
-  .ethos-text { padding: 0 20px; }
+  /* Hero Adjustments */
+  .hero-visual { height: 350px; order: -1; }
+  .hero-content { padding: 40px 20px; text-align: center; align-items: center; }
   
-  /* 4. Founders: ROW LAYOUT (Image Left, Text Right) */
-  .founders-names { 
-    flex-direction: column; 
-    gap: 30px; 
-  }
+  /* Category Grid */
+  .category-grid { gap: 20px; }
+  .category-item { width: 100px; }
+  .cat-img-wrapper { width: 90px; height: 90px; }
   
-  .founder-profile {
-    display: flex;
-    flex-direction: row;       /* Side-by-side layout */
-    align-items: center;       /* Vertically center the text */
-    justify-content: left;   /* Keep the whole card centered */
-    gap: 25px;                 /* Space between image and text */
-    text-align: left;          /* Align text to the left of its box */
-  }
-
-  .founder-img {
-    width: 110px;              /* Slightly smaller for mobile balance */
-    height: 110px;
-    margin-bottom: 0;          /* Remove the desktop bottom margin */
-    flex-shrink: 0;            /* Prevent image from squishing */
-  }
-
-  .founder-info strong {
-    font-size: 1.2rem;         /* Readable size */
-  }
-
-  /* 5. General Container Padding */
-  .container { padding: 0 20px; }
+  /* About Image Mobile Fix */
+  .about-split-content { padding: 40px 20px; text-align: center; }
+  .about-split-image { height: 300px; /* Smaller height for mobile */ }
+  
+  /* Testimonials */
+  .testimonial-grid { grid-template-columns: 1fr; gap: 40px; }
 }

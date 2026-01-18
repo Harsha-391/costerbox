@@ -1,138 +1,180 @@
-/* src/app/page.jsx */
+/* src/app/page.js */
 "use client";
 import React from 'react';
+import Link from 'next/link';
 import '../styles/home.css';
 
 export default function HomePage() {
   return (
     <>
-      {/* NOTE: The <Header /> is now in layout.js 
-        It will automatically appear above this section.
-      */}
-
-      {/* 1. Hero Section */}
+      {/* 1. HERO SECTION (Kept simple to focus on categories below) */}
       <header className="hero-split">
         <div className="hero-content">
           <span className="overline">Est. 2024 • Jaipur, India</span>
-          <h1>Tribal Art,<br/>Reimagined for<br/>Modern Life.</h1>
+          <h1>Tribal Art,<br/>Reimagined.</h1>
           <p>
-            We blend heritage with minimal design. 
             Experience a collection that is culturally rooted, refined, and consciously crafted.
           </p>
-          <div>
-            <a href="#collections" className="btn-editorial">Explore Collections</a>
-          </div>
+          <Link href="#products" className="btn-editorial">Explore Collections</Link>
         </div>
-        <div className="hero-visual">
-          {/* Background Image is handled in src/styles/home.css */}
-        </div>
+        <div className="hero-visual"></div>
       </header>
 
-      {/* 2. Collections Section */}
-      <section id="collections" className="collections-split">
-        
-        <div className="collection-block">
-          <div className="collection-bg bg-main"></div>
-          <div className="collection-info">
-            <span className="overline" style={{color: '#fff'}}>Everyday Wear</span>
-            <h3>Main Products</h3>
-            <p>Shirts, Trousers & Layers</p>
-            <a href="#" className="btn-editorial" style={{borderColor: '#fff', color: '#fff'}}>Shop Now</a>
-          </div>
-        </div>
-
-        <div className="collection-block">
-          <div className="collection-bg bg-archive"></div>
-          <div className="collection-info">
-            <span className="overline" style={{color: '#fff'}}>Limited Drops</span>
-            <h3>The Archives</h3>
-            <p>Curated Lifestyle Narratives</p>
-            <a href="#" className="btn-editorial" style={{borderColor: '#fff', color: '#fff'}}>View Drops</a>
-          </div>
-        </div>
-
-      </section>
-
-      {/* 3. Ethos / About Section */}
-      <section id="about" className="container ethos-section">
-        <div className="ethos-grid">
-          <div className="ethos-image">
-            <img 
-              src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=2070&auto=format&fit=crop" 
-              alt="Fabric Detail" 
-              style={{width: '100%'}} 
-            />
-          </div>
-          <div className="ethos-text">
-            <span className="overline">Our Philosophy</span>
-            <h2>Cultural Depth,<br/>Minimal Design.</h2>
-            <p>
-              Costerbox is not just a brand; it is a bridge between the past and the present. 
-              We focus on "Cultural and design research" to bring you products that tell a story.
-            </p>
-            <p>
-              From concept to "Final production and curation", every step is handled with 
-              ethical standards and a conscious approach to the environment.
-            </p>
-
-            <div className="ethos-details">
-              <div className="ethos-item">
-                <h5>Eco-Packaging</h5> <p>Minimal and eco-conscious packaging for every order.</p>
-              </div>
-              <div className="ethos-item">
-                <h5>Handcrafted</h5> <p>Inspired by aged fabric, sunlit clay, and muted tones.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Founders Section */}
-      <section className="founders-section">
+      {/* 2. SHOP BY CATEGORY (Circular Layout - Like PDF Page 2) */}
+      <section className="category-section">
         <div className="container">
-          <div className="founders-card">
-            <h3>Built on Vision & Integrity</h3>
-            <p style={{marginTop: '20px', fontStyle: 'italic', color: '#555'}}>
-              "To build a culturally rooted yet modern brand that presents traditional art forms in an elegant, refined, and relevant way."
-            </p>
-            
-            <div className="founders-names">
-              
-              <div className="founder-profile">
-                {/* Ensure you have this image in public/founder1.jpg later */}
-                <img 
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop" 
-                  alt="Sumit K. Soni" 
-                  className="founder-img" 
-                />
-                <div className="founder-info">
-                  <strong>Sumit K. Soni</strong>
-
-                  <span> (Founder & CEO)</span>
-                </div>
+          <h2 className="section-title">Shop By Category</h2>
+          
+          <div className="category-grid">
+            {/* Item 1 */}
+            <Link href="/category/clearance" className="category-item">
+              <div className="cat-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1596783437088-e41d4c79e4af?q=80&w=600&auto=format&fit=crop" alt="Clearance" />
               </div>
+              <span>Clearance Sale</span>
+            </Link>
 
-              <div className="founder-profile">
-                {/* Ensure you have this image in public/founder2.jpg later */}
-                <img 
-                  src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop" 
-                  alt="Sukhadev Dewasi" 
-                  className="founder-img" 
-                />
-                <div className="founder-info">
-                  <strong>Sukhadev Dewasi</strong>
-                  <span> (Co-Founder & CFO)</span>
-                </div>
+            {/* Item 2 */}
+            <Link href="/category/anarkali" className="category-item">
+              <div className="cat-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop" alt="Anarkali" />
               </div>
+              <span>Anarkali</span>
+            </Link>
 
-            </div>
+            {/* Item 3 */}
+            <Link href="/category/dress" className="category-item">
+              <div className="cat-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop" alt="Dress" />
+              </div>
+              <span>Dress</span>
+            </Link>
+
+            {/* Item 4 */}
+            <Link href="/category/saree" className="category-item">
+              <div className="cat-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop" alt="Saree" />
+              </div>
+              <span>Saree</span>
+            </Link>
+
+            {/* Item 5 */}
+            <Link href="/category/gharara" className="category-item">
+              <div className="cat-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?q=80&w=600&auto=format&fit=crop" alt="Gharara" />
+              </div>
+              <span>Gharara Set</span>
+            </Link>
+
+            {/* Item 6 */}
+            <Link href="/category/menswear" className="category-item">
+              <div className="cat-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1586227740560-8cf2732c1531?q=80&w=600&auto=format&fit=crop" alt="Menswear" />
+              </div>
+              <span>Menswear</span>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* NOTE: The <Footer /> is now in layout.js 
-        It will automatically appear below this section.
-      */}
+      {/* 3. NEW ARRIVALS / PRODUCTS (Card Layout - Like PDF Page 4) */}
+      <section id="products" className="products-section">
+        <div className="container">
+          <h2 className="section-title">New Arrivals</h2>
+          
+          <div className="product-grid">
+            
+            {/* Product 1 */}
+            <div className="product-card">
+              <div className="p-image">
+                <img src="https://images.unsplash.com/photo-1583391733958-e026b1346338?q=80&w=800&auto=format&fit=crop" alt="Yalina Anarkali" />
+                <span className="tag-new">New</span>
+              </div>
+              <div className="p-details">
+                <h3>Yalina Anarkali Set Of 3</h3>
+                <p className="price">₹16,850</p>
+              </div>
+            </div>
+
+            {/* Product 2 */}
+            <div className="product-card">
+              <div className="p-image">
+                <img src="https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=800&auto=format&fit=crop" alt="Nayab Anarkali" />
+              </div>
+              <div className="p-details">
+                <h3>Nayab Anarkali Set Of 4</h3>
+                <p className="price">₹18,500</p>
+              </div>
+            </div>
+
+            {/* Product 3 */}
+            <div className="product-card">
+              <div className="p-image">
+                <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=800&auto=format&fit=crop" alt="Bindiya Dress" />
+              </div>
+              <div className="p-details">
+                <h3>Bindiya Dress</h3>
+                <p className="price">₹12,990</p>
+              </div>
+            </div>
+
+            {/* Product 4 */}
+            <div className="product-card">
+              <div className="p-image">
+                <img src="https://images.unsplash.com/photo-1605296867304-46d5465a13f1?q=80&w=800&auto=format&fit=crop" alt="Gulshan Sharara" />
+              </div>
+              <div className="p-details">
+                <h3>Gulshan Sharara Set Of 3</h3>
+                <p className="price">₹17,500</p>
+              </div>
+            </div>
+
+          </div>
+          
+          <div style={{textAlign: 'center', marginTop: '50px'}}>
+             <Link href="/shop" className="btn-editorial">View All Products</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. ABOUT US (Layout Like PDF Page 5) */}
+      <section className="about-split-section">
+        <div className="about-split-content">
+          <span className="overline">About Us</span>
+          <h2>A Story From The Roots</h2>
+          <p>
+            We know some things are special when they tell a story, something that comes from the roots of a culture creating a dialect between the user and provider.
+          </p>
+          <p>
+            Costerbox proudly represents this vernacular story from the great state of Rajasthan which talks about the clothes that are made by the experienced hand of local craftsmanship passed down through generations.
+          </p>
+          <Link href="/about" className="link-underline">Read More</Link>
+        </div>
+        <div className="about-split-image">
+           {/* Image of two women sitting, similar to PDF */}
+           <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1887&auto=format&fit=crop" alt="Our Story" />
+        </div>
+      </section>
+
+      {/* 5. TESTIMONIALS (Layout Like PDF Page 6) */}
+      <section className="testimonials-section">
+        <div className="container">
+          <span className="overline">From The People</span>
+          <div className="testimonial-grid">
+            
+            <div className="testimonial-card">
+               <p>"Thanks team, I have received the order. For sure. I am definitely going to recommend you guys for your quick service."</p>
+               <h5>— Aanisah (Spain)</h5>
+            </div>
+
+            <div className="testimonial-card">
+               <p>"Good afternoon. I received my two outfits. They are GORGEOUS!! Will send photos when I wear them. Thank you a million."</p>
+               <h5>— Bea (Kenya)</h5>
+            </div>
+
+          </div>
+        </div>
+      </section>
     </>
   );
 }
