@@ -4,9 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import '../styles/home.css';
 
+
 export default function HomePage() {
   return (
     <>
+
       {/* 1. HERO SECTION (Kept simple to focus on categories below) */}
       <header className="hero-split">
         <div className="hero-content">
