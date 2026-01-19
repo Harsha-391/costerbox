@@ -31,7 +31,7 @@ export default function HomePage() {
             {/* Item 1 */}
             <Link href="/category/clearance" className="category-item">
               <div className="cat-img-wrapper">
-                <img src="https://images.unsplash.com/photo-1596783437088-e41d4c79e4af?q=80&w=600&auto=format&fit=crop" alt="Clearance" />
+                <img src="img14.jpg" alt="Clearance" />
               </div>
               <span>Clearance Sale</span>
             </Link>
