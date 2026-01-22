@@ -87,7 +87,7 @@ export default function Header() {
             </div>
           </div>
 
-          <Link href="/" className="icon-link" title="Shop">
+          <Link href="/shop" className="icon-link" title="Shop">
             <i className="fas fa-store"></i>
           </Link>
           

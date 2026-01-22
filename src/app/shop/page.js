@@ -100,7 +100,29 @@ export default function ShopPage() {
                     <div key={product.id} class="product-card">
                         <div class="img-box">
                             {product.badge && <span class="badge">{product.badge}</span>}
-                            <img src={product.image || "https://placehold.co/600x800"} alt={product.name} />
+                           {/* --- SMARTER IMAGE LOGIC --- */}
+{(() => {
+    // 1. Try featuredImage first
+    let finalImage = product.featuredImage;
+    
+    // 2. If no featuredImage, try the first image from the media array
+    if (!finalImage && product.media && product.media.length > 0) {
+        finalImage = product.media[0];
+    }
+    
+    // 3. If still nothing, use fallback
+    if (!finalImage) {
+        finalImage = 'https://via.placeholder.com/400x500?text=No+Image';
+    }
+
+    return (
+        <img 
+            src={finalImage} 
+            alt={product.title || 'Product Image'} 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+    );
+})()}
                         </div>
                         <div class="card-details">
                             <span class="p-region">{product.region}</span>

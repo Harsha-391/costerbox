@@ -14,12 +14,29 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        // --- FIX: Prevent 400 Error by checking fields first ---
+        if (!data.email || !data.password) {
+            setError('Please enter both email and password.');
+            return;
+        }
+
         setLoading(true);
         try {
             await login(data.email, data.password);
-            router.push('/secured/superadmin'); // Redirect on success
+            // Redirect is handled by the AuthContext/Layout, 
+            // but we push here just in case.
+            router.push('/secured/superadmin'); 
         } catch (err) {
-            setError('Invalid credentials. Access denied.');
+            console.error("Login Failed:", err);
+            // Better error handling for Firebase codes
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+                setError('Incorrect email or password.');
+            } else if (err.code === 'auth/too-many-requests') {
+                setError('Too many failed attempts. Try again later.');
+            } else {
+                setError('Access denied. Please check your internet.');
+            }
         }
         setLoading(false);
     };
