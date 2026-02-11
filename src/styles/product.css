@@ -1,0 +1,231 @@
+/* src/styles/product.css */
+
+.product-page-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    font-family: 'Inter', sans-serif; /* Or whatever font you use */
+}
+
+.loading-screen {
+    padding: 100px;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-bottom: 30px;
+    transition: color 0.2s;
+}
+
+.back-button:hover {
+    color: #000;
+}
+
+.product-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+}
+
+/* Tablet & Desktop Layout */
+@media (min-width: 768px) {
+    .product-layout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    .product-gallery {
+        flex: 1;
+        position: sticky;
+        top: 20px;
+    }
+    .product-info {
+        flex: 1;
+    }
+}
+
+/* Gallery Styles */
+.main-image-container {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: #f9f9f9;
+}
+
+.main-image {
+    width: 100%;
+    height: auto;
+    max-height: 600px;
+    object-fit: cover;
+    display: block;
+}
+
+.product-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: #000;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.thumbnail-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    overflow-x: auto;
+}
+
+.thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.thumbnail:hover, .active-thumb {
+    opacity: 1;
+    border-color: #000;
+}
+
+/* Product Info Styles */
+.product-region {
+    font-size: 0.9rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.product-title {
+    font-size: 2.5rem;
+    margin: 10px 0;
+    color: #111;
+}
+
+.product-price {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 30px;
+}
+
+.product-description h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.product-description p {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+/* Customization Disclaimer */
+.customization-disclaimer {
+    display: flex;
+    gap: 15px;
+    background-color: #fffbeb; /* Light yellow/amber */
+    border-left: 4px solid #f59e0b; /* Amber border */
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    color: #92400e;
+}
+
+.warning-icon {
+    flex-shrink: 0;
+    color: #f59e0b;
+}
+
+.customization-disclaimer strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #b45309;
+}
+
+.customization-disclaimer p {
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Buttons */
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.action-buttons button, .btn-customize {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-cart {
+    background: #fff;
+    border: 2px solid #000;
+    color: #000;
+}
+
+.btn-add-cart:hover {
+    background: #f0f0f0;
+}
+
+.btn-buy-now {
+    background: #000;
+    border: 2px solid #000;
+    color: #fff;
+}
+
+.btn-buy-now:hover {
+    background: #333;
+    border-color: #333;
+}
+
+.btn-customize {
+    width: 100%;
+    background: #f3f4f6;
+    border: 2px solid #e5e7eb;
+    color: #374151;
+    margin-bottom: 30px;
+}
+
+.btn-customize:hover {
+    background: #e5e7eb;
+    color: #000;
+}
+
+.shipping-info {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.8;
+}

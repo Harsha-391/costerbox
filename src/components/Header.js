@@ -1,158 +1,126 @@
 /* src/components/Header.js */
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; 
-import '../styles/header.css';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '../context/AuthContext';
+import { Search, ShoppingBag, User, Menu, X, Package, LogOut } from 'lucide-react';
+import '../styles/header.css'; 
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
-  // --- SEARCH STATES ---
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const searchInputRef = useRef(null);
-  const router = useRouter();
+    const pathname = usePathname();
+    const router = useRouter();
+    const { user, logout } = useAuth();
+    
+    // State for Mobile Menu & Search
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
 
-  // Handle Search Submit
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setIsSearchOpen(false);
-      setIsMenuOpen(false);
+    // Hide Header on Admin/Secured pages (except Login)
+    if (pathname.startsWith('/secured') && pathname !== '/secured/login') {
+        return null;
     }
-  };
 
-  // Focus input when search opens
-  useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
-  // Close search if clicking outside (Optional)
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Close if clicking outside the header/search area
-      if (isSearchOpen && !event.target.closest('.nav-wrapper')) {
-        setIsSearchOpen(false);
-      }
+    const handleLogout = async () => {
+        await logout();
+        router.push('/');
+        setMobileMenuOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isSearchOpen]);
 
-  return (
-    <nav className="nav-wrapper">
-      
-      {/* --- OVERLAY (Click to Close on Mobile) --- */}
-      <div 
-        className={`mobile-overlay ${isMenuOpen ? 'open' : ''}`} 
-        onClick={() => setIsMenuOpen(false)}
-      ></div>
+    return (
+        <nav className="nav-wrapper">
+            <div className="nav-bar">
+                
+                {/* 1. MOBILE TOGGLE (Left) */}
+                <div className="mobile-toggle" onClick={() => setMobileMenuOpen(true)}>
+                    <Menu size={22} />
+                </div>
 
-      {/* --- MAIN HEADER BAR --- */}
-      <div className="nav-bar">
-        
-        {/* 1. MOBILE HAMBURGER (Left) */}
-        <div className="mobile-toggle" onClick={() => setIsMenuOpen(true)}>
-          <i className="fas fa-bars"></i>
-        </div>
+                {/* 2. LOGO (Center) */}
+                <Link href="/" className="brand-logo">
+                    {/* Ensure logo.png exists in /public folder */}
+                    <img src="/logo.png" alt="CosterBox" className="logo-img" />
+                </Link>
 
-        {/* 2. LOGO (Left on Desktop, Center on Mobile) */}
-        <div className="brand-logo">
-          <Link href="/">
-            <img src="/logo.png" alt="Costerbox Logo" className="logo-img" />
-          </Link>
-        </div>
+                {/* 3. DESKTOP ICONS (Right) */}
+                <div className="desktop-icons">
+                    <Link href="/shop" className="icon-link">Archive</Link>
+                    
+                    {/* Search Bar Logic */}
+                    <div className={`search-container ${searchOpen ? 'active' : ''}`}>
+                        <input type="text" className="search-input" placeholder="Search..." />
+                        <button className="icon-link search-trigger" onClick={() => setSearchOpen(!searchOpen)}>
+                            <Search size={20} />
+                        </button>
+                    </div>
 
-        {/* 3. DESKTOP ICONS (Visible ONLY on Desktop) */}
-        <div className="desktop-icons">
-          
-          {/* Desktop Search */}
-          <div className={`search-container ${isSearchOpen ? 'active' : ''}`}>
-            <form onSubmit={handleSearch} className="search-form">
-                <input 
-                    type="text" 
-                    className="search-input" 
-                    placeholder="Search products..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    ref={searchInputRef}
-                />
-            </form>
-            <div className="icon-link search-trigger" onClick={() => setIsSearchOpen(!isSearchOpen)} title="Search">
-                <i className={`fas ${isSearchOpen ? 'fa-times' : 'fa-search'}`}></i>
-            </div>
-          </div>
+                    <Link href="/cart" className="icon-link" title="Cart">
+                        <ShoppingBag size={20} />
+                    </Link>
 
-          <Link href="/shop" className="icon-link" title="Shop">
-            <i className="fas fa-store"></i>
-          </Link>
-          
-          <Link href="/#products" className="icon-link" title="Collections">
-            <i className="fas fa-layer-group"></i>
-          </Link>
+                    {/* DYNAMIC USER SECTION */}
+                    {user ? (
+                        <>
+                            <Link href="/orders" className="icon-link" title="My Orders">
+                                <Package size={20} />
+                            </Link>
+                            <button 
+                                onClick={handleLogout} 
+                                className="icon-link" 
+                                title="Logout" 
+                            >
+                                <LogOut size={20} />
+                            </button>
+                        </>
+                    ) : (
+                        <Link href="/secured/login" className="icon-link" title="Login">
+                            <User size={20} />
+                        </Link>
+                    )}
+                </div>
 
-          <Link href="/about" className="icon-link" title="Our Story">
-            <i className="fas fa-book-open"></i>
-          </Link>
-
-          <Link href="/contact" className="icon-link" title="Contact Us">
-            <i className="fas fa-envelope"></i>
-          </Link>
-
-          <a href="#" className="icon-link" title="Cart">
-            <i className="fas fa-shopping-cart"></i> (0)
-          </a>
-        </div>
-
-        {/* 4. MOBILE RIGHT SECTION (Search + Cart) - Visible ONLY on Mobile */}
-        <div className="mobile-right-section">
-            {/* Mobile Search Icon Trigger */}
-            <div className="mobile-search-trigger" onClick={() => setIsSearchOpen(!isSearchOpen)}>
-                <i className={`fas ${isSearchOpen ? 'fa-times' : 'fa-search'}`}></i>
+                {/* 4. MOBILE RIGHT SECTION (Search + Cart) */}
+                <div className="mobile-right-section">
+                    <div className="mobile-search-trigger">
+                        <Search size={20} />
+                    </div>
+                    <Link href="/cart" className="mobile-cart-link">
+                        <ShoppingBag size={20} />
+                    </Link>
+                </div>
             </div>
 
-            {/* Mobile Cart Icon */}
-            <a href="#" className="mobile-cart-link">
-                <i className="fas fa-shopping-cart"></i> (0)
-            </a>
-        </div>
+            {/* --- MOBILE SIDEBAR MENU --- */}
+            <div className={`mobile-menu-expansion ${mobileMenuOpen ? 'open' : ''}`}>
+                <div className="mobile-menu-header">
+                    <span className="menu-title">Menu</span>
+                    <X className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)} />
+                </div>
+                
+                <Link href="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+                <Link href="/shop" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Archive</Link>
+                <Link href="/cart" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Cart</Link>
+                
+                {user ? (
+                    <>
+                        <Link href="/orders" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
+                        <button 
+                            className="mobile-link mobile-link-btn" 
+                            onClick={handleLogout}
+                        >
+                            Logout
+                        </button>
+                    </>
+                ) : (
+                    <Link href="/secured/login" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                )}
+            </div>
 
-      </div>
-
-      {/* --- MOBILE SEARCH BAR DROPDOWN (Visible when search is open) --- */}
-      <div className={`mobile-search-bar ${isSearchOpen ? 'open' : ''}`}>
-         <form onSubmit={handleSearch}>
-            <input 
-                type="text" 
-                placeholder="Search products..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+            {/* OVERLAY */}
+            <div 
+                className={`mobile-overlay ${mobileMenuOpen ? 'open' : ''}`} 
+                onClick={() => setMobileMenuOpen(false)}
             />
-            <button type="submit"><i className="fas fa-arrow-right"></i></button>
-         </form>
-      </div>
-
-      {/* --- MOBILE SIDEBAR MENU (Slide from Left) --- */}
-      <div className={`mobile-menu-expansion ${isMenuOpen ? 'open' : ''}`}>
-        
-        {/* Sidebar Header */}
-        <div className="mobile-menu-header">
-            <span className="menu-title">Menu</span>
-            <div className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>
-                <i className="fas fa-times"></i>
-            </div>
-        </div>
-
-        {/* Mobile Links */}
-        <Link href="/" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-        <Link href="/#products" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Collections</Link>
-        <Link href="/about" className="mobile-link" onClick={() => setIsMenuOpen(false)}>About</Link>
-        <Link href="/contact" className="mobile-link" onClick={() => setIsMenuOpen(false)}>Contact</Link>
-      </div>
-    </nav>
-  );
+        </nav>
+    );
 }

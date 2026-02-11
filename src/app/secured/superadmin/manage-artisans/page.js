@@ -1,105 +1,109 @@
 /* src/app/secured/superadmin/manage-artisans/page.js */
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../../../lib/firebase'; 
+import { collection, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 
-// Mock Data for Artisans
-const MOCK_ARTISANS = [
-  { id: 1, name: "Ramesh Kumar", location: "Barmer", activeOrders: 3, pendingPayout: "₹12,000" },
-  { id: 2, name: "Sunita Devi", location: "Jodhpur", activeOrders: 1, pendingPayout: "₹4,500" },
-];
+export default function ArtisanChatPage() {
+  const [chats, setChats] = useState([]);
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [adminMessage, setAdminMessage] = useState("");
 
-// Mock Chat Data
-const MOCK_CHATS = [
-  { sender: 'System', msg: 'Order #1024 Assigned to Ramesh' },
-  { sender: 'Ramesh', msg: 'Material received. Starting embroidery tomorrow.' },
-  { sender: 'Admin', msg: 'Great, please upload progress photo by Friday.' },
-];
+  // 1. Fetch All Active Chats
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "chats"), (snapshot) => {
+        const chatsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setChats(chatsData);
+        if (chatsData.length > 0 && !selectedChatId) {
+            setSelectedChatId(chatsData[0].id); // Auto select first chat
+        }
+    });
+    return () => unsub();
+  }, []);
 
-export default function ManageArtisans() {
-  const [selectedArtisan, setSelectedArtisan] = useState(null);
+  // 2. Identify the currently selected chat object
+  const activeChat = chats.find(c => c.id === selectedChatId);
+
+  // 3. Admin Intervention (Send Message)
+  const sendIntervention = async () => {
+    if (!adminMessage.trim()) return;
+    const chatRef = doc(db, "chats", selectedChatId);
+    
+    await updateDoc(chatRef, {
+        messages: arrayUnion({
+            sender: 'admin',
+            text: `[ADMIN ALERT]: ${adminMessage}`,
+            time: new Date().toLocaleTimeString()
+        })
+    });
+    setAdminMessage("");
+  };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', height: '80vh' }}>
+    <div style={{ display: 'flex', height: '85vh', gap: '20px' }}>
       
-      {/* LEFT: ARTISAN LIST */}
-      <div style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid #eee' }}>
-            <h2 style={{ fontSize: '18px' }}>Artisans</h2>
-        </div>
-        <div style={{ overflowY: 'auto' }}>
-            {MOCK_ARTISANS.map(artisan => (
-                <div 
-                    key={artisan.id} 
-                    onClick={() => setSelectedArtisan(artisan)}
-                    style={{ 
-                        padding: '20px', 
-                        borderBottom: '1px solid #f9f9f9', 
-                        cursor: 'pointer',
-                        background: selectedArtisan?.id === artisan.id ? '#f0f0f0' : '#fff'
-                    }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <strong>{artisan.name}</strong>
-                        <span style={{ fontSize: '12px', background: '#e3f2fd', color: '#1565c0', padding: '2px 8px', borderRadius: '10px' }}>{artisan.location}</span>
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
-                        Active Orders: {artisan.activeOrders} • Payout: {artisan.pendingPayout}
-                    </div>
-                </div>
-            ))}
-        </div>
+      {/* LEFT: List of Chats */}
+      <div style={{ width: '300px', background: '#fff', overflowY: 'auto' }}>
+         <div style={{ padding: '15px', fontWeight: 'bold', borderBottom: '1px solid #eee' }}>Active Negotiations</div>
+         {chats.map(chat => (
+             <div 
+                key={chat.id} 
+                onClick={() => setSelectedChatId(chat.id)}
+                style={{ 
+                    padding: '15px', 
+                    borderBottom: '1px solid #f5f5f5', 
+                    background: selectedChatId === chat.id ? '#e3f2fd' : 'transparent',
+                    cursor: 'pointer' 
+                }}
+             >
+                 <div style={{ fontWeight: 'bold', fontSize: '14px' }}>Order: {chat.id}</div>
+                 <div style={{ fontSize: '12px', color: '#666' }}>Last msg: {chat.messages ? chat.messages[chat.messages.length - 1]?.text.substring(0, 20) : "No msgs"}...</div>
+             </div>
+         ))}
       </div>
 
-      {/* RIGHT: DETAILS & CHAT */}
-      <div style={{ background: '#fff', borderRadius: '8px', padding: '30px', display: 'flex', flexDirection: 'column' }}>
-        {selectedArtisan ? (
+      {/* RIGHT: Chat Window */}
+      <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+        {activeChat ? (
             <>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '20px', borderBottom: '1px solid #eee' }}>
-                    <div>
-                        <h2 style={{ fontSize: '22px', marginBottom: '5px' }}>{selectedArtisan.name}</h2>
-                        <p style={{ color: '#888' }}>ID: ART-{selectedArtisan.id} • {selectedArtisan.location}</p>
-                    </div>
-                    <button style={{ padding: '8px 15px', background: '#333', color: '#fff', border: 'none', borderRadius: '4px' }}>View Profile</button>
-                </div>
-
-                {/* Live Order Context */}
-                <div style={{ margin: '20px 0', padding: '15px', background: '#fff8e1', borderRadius: '6px', border: '1px solid #ffe082' }}>
-                    <strong>Current Focus: Order #1024</strong>
-                    <p style={{ fontSize: '13px', margin: '5px 0' }}>Anarkali Set - Yellow - Size M</p>
-                    <div style={{ height: '5px', background: '#ccc', borderRadius: '5px', marginTop: '10px', width: '100%' }}>
-                        <div style={{ height: '100%', width: '60%', background: '#ff9800', borderRadius: '5px' }}></div>
-                    </div>
-                    <small style={{ color: '#666' }}>Status: Production (60%)</small>
-                </div>
-
-                {/* Chat Interface */}
-                <div style={{ flex: 1, border: '1px solid #eee', borderRadius: '8px', padding: '15px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ flex: 1, overflowY: 'auto', marginBottom: '15px' }}>
-                        {MOCK_CHATS.map((chat, i) => (
-                            <div key={i} style={{ marginBottom: '10px', textAlign: chat.sender === 'Admin' ? 'right' : 'left' }}>
-                                <div style={{ 
-                                    display: 'inline-block', 
-                                    padding: '8px 12px', 
-                                    borderRadius: '8px', 
-                                    background: chat.sender === 'Admin' ? '#e3f2fd' : '#f5f5f5',
-                                    fontSize: '14px'
-                                }}>
-                                    <strong>{chat.sender}: </strong> {chat.msg}
-                                </div>
+                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#fafafa' }}>
+                    {activeChat.messages && activeChat.messages.map((msg, i) => (
+                        <div key={i} style={{ 
+                            display: 'flex', 
+                            justifyContent: msg.sender === 'customer' ? 'flex-start' : (msg.sender === 'admin' ? 'center' : 'flex-end'),
+                            marginBottom: '10px' 
+                        }}>
+                            <div style={{ 
+                                padding: '10px 15px', 
+                                borderRadius: '10px', 
+                                background: msg.sender === 'customer' ? '#fff' : (msg.sender === 'admin' ? '#ffebee' : '#333'),
+                                color: msg.sender === 'customer' ? '#000' : (msg.sender === 'admin' ? '#c62828' : '#fff'),
+                                border: msg.sender === 'customer' ? '1px solid #ddd' : 'none',
+                                maxWidth: '70%',
+                                fontSize: '14px'
+                            }}>
+                                {msg.sender === 'admin' && <strong>👮 SUPERVISOR: </strong>}
+                                {msg.text}
                             </div>
-                        ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <input type="text" placeholder="Type a message to artisan..." style={{ flex: 1, padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }} />
-                        <button style={{ padding: '10px 20px', background: 'green', color: '#fff', border: 'none', borderRadius: '4px' }}>Send</button>
-                    </div>
+                        </div>
+                    ))}
+                </div>
+                
+                {/* Intervention Box */}
+                <div style={{ padding: '15px', borderTop: '1px solid #eee', display: 'flex', gap: '10px' }}>
+                    <input 
+                        value={adminMessage}
+                        onChange={(e) => setAdminMessage(e.target.value)}
+                        placeholder="Type an intervention message..." 
+                        style={{ flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    />
+                    <button onClick={sendIntervention} style={{ padding: '10px 20px', background: '#d32f2f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                        Send
+                    </button>
                 </div>
             </>
         ) : (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
-                Select an artisan to view details
-            </div>
+            <div style={{ padding: '20px' }}>Select a chat to monitor</div>
         )}
       </div>
 
