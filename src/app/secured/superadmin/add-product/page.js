@@ -1,13 +1,14 @@
 /* src/app/secured/superadmin/add-product/page.js */
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { db, storage } from '../../../../lib/firebase';
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './add-product.css';
 
-export default function AddProductPage() {
+// 1. Rename the main function to an internal component and REMOVE "export default"
+function AddProductContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
@@ -308,5 +309,14 @@ export default function AddProductPage() {
 
       </form>
     </div>
+  );
+}
+
+// 2. Create the new default export wrapper here
+export default function AddProductPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '50px', textAlign: 'center' }}>Loading form...</div>}>
+      <AddProductContent />
+    </Suspense>
   );
 }

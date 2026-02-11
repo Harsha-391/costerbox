@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext'; 
-import ChatWindow from '../../components/ChatWindow'; 
+import ChatWindow from '../../components/'; 
 import Link from 'next/link'; // <--- 1. IMPORT ADDED
 import { MessageCircle, ShoppingBag, X } from 'lucide-react'; 
 import '../../styles/shop.css';
