@@ -155,7 +155,7 @@ export default function ShopPage() {
 
                                     {/* 3. WRAP TITLE IN LINK */}
                                     <Link href={`/shop/${product.id}`} style={{ textDecoration: 'none' }}>
-                                        <h3 className="p-name">{product.name}</h3>
+                                        <h3 className="p-name">{product.name || product.title}</h3>
                                     </Link>
 
                                     <span className="p-price">{product.price}</span>

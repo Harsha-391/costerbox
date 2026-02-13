@@ -5,7 +5,8 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
-import { Package, Truck, CheckCircle, ExternalLink, MapPin } from 'lucide-react';
+import { Package, Truck, CheckCircle, ExternalLink, MapPin, MessageCircle } from 'lucide-react';
+import ChatWindow from '../../components/ChatWindow';
 import '../../styles/orders.css';
 
 export default function MyOrdersPage() {
@@ -13,6 +14,7 @@ export default function MyOrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedChatOrder, setSelectedChatOrder] = useState(null);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -160,14 +162,58 @@ export default function MyOrdersPage() {
                                     <div className="product-info">
                                         <h3>{order.product?.name}</h3>
                                         <p style={{ fontSize: '14px', color: '#6b7280' }}>Qty: 1</p>
+
+                                        {/* CHAT BUTTON FOR CUSTOM ORDERS */}
+                                        {order.isCustomOrder && order.artisanId && (
+                                            <button
+                                                onClick={() => setSelectedChatOrder(order)}
+                                                style={{
+                                                    marginTop: '10px',
+                                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                                    padding: '8px 12px',
+                                                    background: '#3b82f6', color: '#fff',
+                                                    border: 'none', borderRadius: '6px',
+                                                    cursor: 'pointer', fontSize: '13px', fontWeight: '500'
+                                                }}
+                                            >
+                                                <MessageCircle size={16} /> Chat with Artisan
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="order-total">
                                         <strong>{order.product?.price}</strong>
+                                        {order.isCustomOrder && (
+                                            <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px' }}>
+                                                Partial Paid: ₹{order.payment?.paidAmount}
+                                            </div>
+                                        )}
+                                        {order.status === 'pending_artisan_acceptance' && (
+                                            <div style={{
+                                                marginTop: '8px', background: '#fff7ed', color: '#c2410c',
+                                                padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold',
+                                                border: '1px solid #fed7aa'
+                                            }}>
+                                                Waiting for Artisan Acceptance...
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* CHAT MODAL */}
+            {selectedChatOrder && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: '10px' }}>
+                    <ChatWindow
+                        chatId={`order_${selectedChatOrder.id}`}
+                        artisanId={selectedChatOrder.artisanId}
+                        customerId={user.uid}
+                        productName={selectedChatOrder.product?.name}
+                        onClose={() => setSelectedChatOrder(null)}
+                    />
                 </div>
             )}
         </div>

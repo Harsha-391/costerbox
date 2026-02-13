@@ -1,77 +1,122 @@
 /* src/app/secured/superadmin/shipping/page.js */
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '../../../../lib/firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { Truck, Package, Clock, CheckCircle } from 'lucide-react';
 
 export default function ShippingPage() {
-  // Mock Data
-  const [shipments, setShipments] = useState([
-    { id: '#SHP-001', order: '#ORD-7783', customer: 'Rahul K.', courier: 'Delhivery', awb: '1234567890', status: 'In Transit', location: 'Jaipur Hub' },
-    { id: '#SHP-002', order: '#ORD-7780', customer: 'Sita D.', courier: 'BlueDart', awb: '0987654321', status: 'Delivered', location: 'Mumbai' },
-  ]);
+    const [shipments, setShipments] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  return (
-    <div>
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>Logistics & Shipping</h1>
+    useEffect(() => {
+        const fetchShipments = async () => {
+            try {
+                // Fetch orders that have shipmentId or status 'shipped'/'delivered'
+                // Firestore OR queries are tricky, let's just fetch all orders and filter client side for now (assuming low volume)
+                // Or filtered query: status 'in' ['shipped', 'delivered']
+                const q = query(
+                    collection(db, "orders"),
+                    where("status", "in", ["shipped", "delivered", "ready_for_shipping"])
+                );
+                const snap = await getDocs(q);
+                const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      {/* Stats Cards */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-        <div style={styles.card}>
-            <h3>Ready to Ship</h3>
-            <div style={{fontSize: '24px', fontWeight: 'bold'}}>5</div>
-        </div>
-        <div style={styles.card}>
-            <h3>In Transit</h3>
-            <div style={{fontSize: '24px', fontWeight: 'bold', color: '#f9a825'}}>12</div>
-        </div>
-        <div style={styles.card}>
-            <h3>Delivered (This Week)</h3>
-            <div style={{fontSize: '24px', fontWeight: 'bold', color: '#1e8e3e'}}>48</div>
-        </div>
-      </div>
+                // Sort by date (desc)
+                list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-      {/* Main Shipping Table */}
-      <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ marginBottom: '15px' }}>Active Shipments</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-                    <th style={{ padding: '10px' }}>Shipment ID</th>
-                    <th style={{ padding: '10px' }}>Order Ref</th>
-                    <th style={{ padding: '10px' }}>Courier</th>
-                    <th style={{ padding: '10px' }}>AWB / Tracking</th>
-                    <th style={{ padding: '10px' }}>Current Status</th>
-                    <th style={{ padding: '10px' }}>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {shipments.map(ship => (
-                    <tr key={ship.id} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '15px' }}>{ship.id}</td>
-                        <td style={{ padding: '15px' }}>{ship.order}<br/><small>{ship.customer}</small></td>
-                        <td style={{ padding: '15px' }}>{ship.courier}</td>
-                        <td style={{ padding: '15px', fontFamily: 'monospace' }}>{ship.awb}</td>
-                        <td style={{ padding: '15px' }}>
-                            <span style={{ 
-                                padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold',
-                                background: ship.status === 'Delivered' ? '#e6f4ea' : '#fff3e0',
-                                color: ship.status === 'Delivered' ? 'green' : 'orange'
-                            }}>
-                                {ship.status}
-                            </span>
-                            <div style={{fontSize:'10px', marginTop:'5px'}}>{ship.location}</div>
-                        </td>
-                        <td style={{ padding: '15px' }}>
-                            <button style={{ border: '1px solid #ddd', background: '#fff', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Track</button>
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-      </div>
-    </div>
-  );
+                setShipments(list);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchShipments();
+    }, []);
+
+    const getStatusColor = (status) => {
+        if (status === 'delivered') return '#10b981';
+        if (status === 'shipped') return '#3b82f6';
+        return '#f59e0b';
+    };
+
+    if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>Loading Shipping Data...</div>;
+
+    return (
+        <div>
+            <h1 style={{ fontSize: '24px', marginBottom: '30px' }}>Shipping & Logistics</h1>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '40px' }}>
+                <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ background: '#e0f2fe', padding: '12px', borderRadius: '50%', color: '#0369a1' }}><Truck size={24} /></div>
+                    <div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{shipments.filter(s => s.status === 'shipped').length}</div>
+                        <div style={{ color: '#666', fontSize: '14px' }}>In Transit</div>
+                    </div>
+                </div>
+                <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ background: '#dcfce7', padding: '12px', borderRadius: '50%', color: '#166534' }}><CheckCircle size={24} /></div>
+                    <div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{shipments.filter(s => s.status === 'delivered').length}</div>
+                        <div style={{ color: '#666', fontSize: '14px' }}>Delivered</div>
+                    </div>
+                </div>
+                <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ background: '#fef3c7', padding: '12px', borderRadius: '50%', color: '#b45309' }}><Clock size={24} /></div>
+                    <div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{shipments.length}</div>
+                        <div style={{ color: '#666', fontSize: '14px' }}>Total Shipments</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                        <tr>
+                            <th style={{ padding: '15px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Order ID</th>
+                            <th style={{ padding: '15px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Customer</th>
+                            <th style={{ padding: '15px', textAlign: 'left', fontSize: '13px', color: '#666' }}>AWB / Tracking</th>
+                            <th style={{ padding: '15px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Status</th>
+                            <th style={{ padding: '15px', textAlign: 'left', fontSize: '13px', color: '#666' }}>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {shipments.length === 0 ? (
+                            <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#999' }}>No active shipments found.</td></tr>
+                        ) : shipments.map(ship => (
+                            <tr key={ship.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                <td style={{ padding: '15px', fontWeight: '500' }}>#{ship.id.slice(-6)}</td>
+                                <td style={{ padding: '15px' }}>
+                                    <div>{ship.shipping?.firstName}</div>
+                                    <div style={{ fontSize: '12px', color: '#999' }}>{ship.shipping?.city}</div>
+                                </td>
+                                <td style={{ padding: '15px' }}>
+                                    {ship.awbCode ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                            <Package size={14} /> {ship.awbCode}
+                                        </div>
+                                    ) : (
+                                        <span style={{ color: '#999' }}>-</span>
+                                    )}
+                                </td>
+                                <td style={{ padding: '15px' }}>
+                                    <span style={{
+                                        padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold',
+                                        background: `${getStatusColor(ship.status)}20`, color: getStatusColor(ship.status)
+                                    }}>
+                                        {ship.status?.toUpperCase()}
+                                    </span>
+                                </td>
+                                <td style={{ padding: '15px', color: '#666', fontSize: '13px' }}>
+                                    {new Date(ship.createdAt?.seconds * 1000).toLocaleDateString()}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
 }
-
-const styles = {
-    card: { flex: 1, background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }
-};

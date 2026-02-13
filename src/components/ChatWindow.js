@@ -113,13 +113,13 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
     };
 
     const toggleHijack = async () => {
-        if (role !== "admin") return;
+        if (role !== "admin" && role !== "superadmin") return;
         const newStatus = chatData?.hijackedBy ? null : user.uid;
         await updateDoc(doc(db, "chats", chatId), { hijackedBy: newStatus });
     };
 
     const canChat = () => {
-        if (role === 'admin' || role === 'user') return true;
+        if (role === 'admin' || role === 'superadmin' || role === 'user') return true;
         if (role === 'artisan') return !chatData?.hijackedBy;
         return false;
     };
@@ -133,7 +133,7 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
                     <span style={{ fontSize: '12px', color: '#9ca3af' }}>Customization Request</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {role === 'admin' && (
+                    {(role === 'admin' || role === 'superadmin') && (
                         <button
                             onClick={toggleHijack}
                             style={{

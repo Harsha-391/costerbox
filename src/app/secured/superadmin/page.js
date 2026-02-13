@@ -1,71 +1,177 @@
 /* src/app/secured/superadmin/page.js */
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { db } from '../../../lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { IndianRupee, ShoppingBag, Shirt, Users, Plus, TrendingUp } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const stats = [
-    { label: 'Total Sales', value: '₹1,24,500', color: '#4caf50', icon: 'fa-rupee-sign' },
-    { label: 'Total Orders', value: '48', color: '#2196f3', icon: 'fa-shopping-bag' },
-    { label: 'Active Products', value: '156', color: '#ff9800', icon: 'fa-tshirt' },
-    { label: 'Active Artisans', value: '12', color: '#9c27b0', icon: 'fa-hands' },
-  ];
+    const [stats, setStats] = useState({
+        totalSales: 0,
+        totalOrders: 0,
+        activeProducts: 0,
+        activeArtisans: 0
+    });
+    const [recentOrders, setRecentOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  return (
-    <div>
-      <h1 style={{ fontSize: '24px', marginBottom: '30px' }}>Dashboard Overview</h1>
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // 1. ORDERS Stats & Recent
+                const ordersRef = collection(db, "orders");
+                const qOrders = query(ordersRef, orderBy("createdAt", "desc"));
+                const orderSnap = await getDocs(qOrders);
 
-      {/* STATS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
-        {stats.map((stat, i) => (
-            <div key={i} style={{ background: '#fff', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                    <h3 style={{ fontSize: '28px', margin: '0 0 5px 0' }}>{stat.value}</h3>
-                    <span style={{ color: '#888', fontSize: '14px' }}>{stat.label}</span>
-                </div>
-                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: `${stat.color}20`, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                    <i className={`fas ${stat.icon}`}></i>
-                </div>
+                let sales = 0;
+                const orders = orderSnap.docs.map(doc => {
+                    const data = doc.data();
+                    // Add to sales if paid amount exists
+                    if (data.payment?.paidAmount) {
+                        sales += Number(data.payment.paidAmount);
+                    } else if (data.totalAmount && ['paid', 'shipped', 'delivered'].includes(data.status)) {
+                        // Legacy check
+                        sales += Number(data.totalAmount);
+                    }
+                    return { id: doc.id, ...data };
+                });
+
+                // 2. PRODUCTS Count
+                const productSnap = await getDocs(collection(db, "products"));
+                // 3. ARTISANS Count
+                const artisanSnap = await getDocs(query(collection(db, "users"), where("role", "==", "artisan")));
+
+                setStats({
+                    totalSales: sales,
+                    totalOrders: orders.length,
+                    activeProducts: productSnap.size,
+                    activeArtisans: artisanSnap.size
+                });
+
+                setRecentOrders(orders.slice(0, 5));
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
+    if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>Loading Analytics...</div>;
+
+    const statCards = [
+        { label: 'Total Sales', value: formatCurrency(stats.totalSales), color: '#10b981', bg: '#d1fae5', icon: IndianRupee },
+        { label: 'Total Orders', value: stats.totalOrders, color: '#3b82f6', bg: '#dbeafe', icon: ShoppingBag },
+        { label: 'Active Products', value: stats.activeProducts, color: '#f59e0b', bg: '#fef3c7', icon: Shirt },
+        { label: 'Artisans', value: stats.activeArtisans, color: '#8b5cf6', bg: '#ede9fe', icon: Users },
+    ];
+
+    return (
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h1 style={{ fontSize: '24px', margin: 0 }}>Dashboard Overview</h1>
+                <span style={{ fontSize: '13px', color: '#666' }}>Real-time updates</span>
             </div>
-        ))}
-      </div>
 
-      {/* QUICK ACTIONS */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-        
-        {/* Recent Activity */}
-        <div style={{ background: '#fff', padding: '30px', borderRadius: '8px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Recent Orders</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {[1,2,3].map(i => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+            {/* STATS GRID */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
+                {statCards.map((stat, i) => (
+                    <div key={i} style={{ background: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #f3f4f6' }}>
                         <div>
-                            <strong>Order #102{i}</strong> <br/>
-                            <small style={{color: '#888'}}>2 mins ago • Via Jodhpur Artisan</small>
+                            <h3 style={{ fontSize: '28px', margin: '0 0 5px 0', fontWeight: 'bold' }}>{stat.value}</h3>
+                            <span style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>{stat.label}</span>
                         </div>
-                        <span style={{ color: 'green', fontSize: '12px', background: '#e8f5e9', padding: '4px 8px', borderRadius: '4px', height: 'fit-content' }}>Paid</span>
+                        <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <stat.icon size={24} />
+                        </div>
                     </div>
                 ))}
             </div>
-            <Link href="/secured/superadmin/orders" style={{ display: 'block', marginTop: '20px', color: 'blue', textDecoration: 'underline' }}>View All Orders</Link>
-        </div>
 
-        {/* Shortcuts */}
-        <div style={{ background: '#fff', padding: '30px', borderRadius: '8px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Quick Actions</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <Link href="/secured/superadmin/add-product" style={{ padding: '20px', border: '1px dashed #ccc', textAlign: 'center', borderRadius: '6px', color: '#333', textDecoration: 'none' }}>
-                    <i className="fas fa-plus" style={{display: 'block', fontSize: '24px', marginBottom: '10px'}}></i>
-                    Add Product
-                </Link>
-                <Link href="/secured/superadmin/manage-artisans" style={{ padding: '20px', border: '1px dashed #ccc', textAlign: 'center', borderRadius: '6px', color: '#333', textDecoration: 'none' }}>
-                    <i className="fas fa-user-plus" style={{display: 'block', fontSize: '24px', marginBottom: '10px'}}></i>
-                    Add Artisan
-                </Link>
+            {/* LOWER SECTION */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
+
+                {/* Recent Orders */}
+                <div style={{ background: '#fff', padding: '25px', borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 2px 5px rgba(0,0,0,0.03)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0, fontSize: '18px' }}>Recent Orders</h3>
+                        <Link href="/secured/superadmin/orders" style={{ fontSize: '13px', color: '#2563eb', fontWeight: '500' }}>View All</Link>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                        {recentOrders.length === 0 ? <p style={{ color: '#999' }}>No orders yet.</p> : recentOrders.map((order, i) => (
+                            <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: i !== recentOrders.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                    <div style={{ background: '#f9fafb', padding: '10px', borderRadius: '8px' }}>
+                                        <ShoppingBag size={18} color="#6b7280" />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: '600', fontSize: '14px' }}>{order.product?.name || 'Unknown Item'}</div>
+                                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                            {order.shipping?.firstName} • {new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                                        {formatCurrency(order.payment?.paidAmount || order.totalAmount || 0)}
+                                    </div>
+                                    <span style={{
+                                        fontSize: '11px',
+                                        padding: '2px 8px',
+                                        borderRadius: '10px',
+                                        background: order.status === 'paid' ? '#dcfce7' : order.status === 'pending_artisan_acceptance' ? '#ffedd5' : '#f3f4f6',
+                                        color: order.status === 'paid' ? '#166534' : order.status === 'pending_artisan_acceptance' ? '#c2410c' : '#374151',
+                                        fontWeight: '600'
+                                    }}>
+                                        {order.status === 'pending_artisan_acceptance' ? 'Pending Artisan' : order.status}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ background: '#fff', padding: '25px', borderRadius: '12px', border: '1px solid #f3f4f6', boxShadow: '0 2px 5px rgba(0,0,0,0.03)' }}>
+                        <h3 style={{ margin: '0 0 20px 0', fontSize: '18px' }}>Quick Actions</h3>
+                        <div style={{ display: 'grid', gap: '15px' }}>
+                            <Link href="/secured/superadmin/add-product" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '10px', color: '#333', textDecoration: 'none', transition: 'background 0.2s', background: '#fff' }}>
+                                <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '10px', borderRadius: '8px' }}><Plus size={20} /></div>
+                                <span style={{ fontWeight: '500' }}>Add New Product</span>
+                            </Link>
+                            <Link href="/secured/superadmin/manage-artisans" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '10px', color: '#333', textDecoration: 'none', transition: 'background 0.2s', background: '#fff' }}>
+                                <div style={{ background: '#fce7f3', color: '#be185d', padding: '10px', borderRadius: '8px' }}><Users size={20} /></div>
+                                <span style={{ fontWeight: '500' }}>Register Artisan</span>
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#4f46e5', padding: '25px', borderRadius: '12px', color: '#fff' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                            <h3 style={{ margin: 0, fontSize: '16px' }}>Growth</h3>
+                            <TrendingUp size={20} />
+                        </div>
+                        <p style={{ fontSize: '13px', opacity: 0.9, marginBottom: '20px' }}>
+                            Sales are tracking well. Active customizations have increased.
+                        </p>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>+12% <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.8 }}>this month</span></div>
+                    </div>
+                </div>
+
             </div>
         </div>
-
-      </div>
-    </div>
-  );
+    );
 }

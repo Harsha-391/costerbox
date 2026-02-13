@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
-import { Package, Truck, CheckCircle, Clock, MapPin, ExternalLink } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, MapPin, ExternalLink, MessageCircle, AlertTriangle } from 'lucide-react';
 
 export default function AdminOrdersPage() {
     const [orders, setOrders] = useState([]);
@@ -47,6 +47,31 @@ export default function AdminOrdersPage() {
 
     useEffect(() => { fetchOrders(); }, []);
 
+    const handleShip = async () => {
+        if (!editingOrder) return;
+        if (!window.confirm(`Ship Order #${editingOrder.orderId}? This will create a shipment in Shiprocket.`)) return;
+
+        try {
+            const res = await fetch('/api/shiprocket/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: editingOrder.id })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`Shipment Created! ID: ${data.data.shipment_id}`);
+                setEditingOrder(null);
+                fetchOrders();
+            } else {
+                alert(`Failed: ${data.message || data.error}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error creating shipment");
+        }
+    };
+
     const handleUpdateStatus = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -76,6 +101,7 @@ export default function AdminOrdersPage() {
         if (status === 'delivered') return { background: '#dcfce7', color: '#166534' };
         if (status === 'shipped') return { background: '#dbeafe', color: '#1e40af' };
         if (status === 'paid') return { background: '#e0f2fe', color: '#0369a1' };
+        if (status === 'pending_artisan_acceptance') return { background: '#ffedd5', color: '#c2410c', border: '1px solid #fed7aa' };
         return { background: '#fef9c3', color: '#854d0e' }; // pending/processing
     };
 
@@ -156,11 +182,29 @@ export default function AdminOrdersPage() {
                                         onClick={() => setEditingOrder(order)}
                                         style={{
                                             color: '#2563eb', border: '1px solid #bfdbfe', padding: '6px 10px',
-                                            borderRadius: '6px', background: '#eff6ff', cursor: 'pointer', fontWeight: '500'
+                                            borderRadius: '6px', background: '#eff6ff', cursor: 'pointer', fontWeight: '500',
+                                            marginBottom: '5px', width: '100%'
                                         }}
                                     >
                                         Manage
                                     </button>
+
+                                    {(order.isCustomOrder || order.isFlagged) && (
+                                        <a
+                                            href={`/secured/superadmin/live-chats?chatId=order_${order.id}&flagReason=${encodeURIComponent(order.flagReason || '')}`}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                                                padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', textDecoration: 'none',
+                                                background: order.isFlagged ? '#fee2e2' : '#f0fdf4',
+                                                color: order.isFlagged ? '#b91c1c' : '#15803d',
+                                                border: order.isFlagged ? '1px solid #fca5a5' : '1px solid #bbf7d0',
+                                                fontSize: '12px', fontWeight: 'bold'
+                                            }}
+                                        >
+                                            {order.isFlagged ? <AlertTriangle size={14} /> : <MessageCircle size={14} />}
+                                            {order.isFlagged ? 'Review Issue' : 'Chat'}
+                                        </a>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -188,6 +232,7 @@ export default function AdminOrdersPage() {
                                 <label style={labelStyle}>Order Status</label>
                                 <select name="status" defaultValue={editingOrder.status} style={inputStyle}>
                                     <option value="paid">Processing (Paid)</option>
+                                    <option value="pending_artisan_acceptance">Pending Artisan Acceptance</option>
                                     <option value="shipped">Shipped</option>
                                     <option value="delivered">Delivered</option>
                                 </select>
@@ -225,6 +270,17 @@ export default function AdminOrdersPage() {
                                 >
                                     Cancel
                                 </button>
+
+                                {editingOrder.status !== 'shipped' && editingOrder.status !== 'delivered' && (
+                                    <button
+                                        type="button"
+                                        onClick={handleShip}
+                                        style={{ padding: '8px 16px', color: '#fff', background: '#7c3aed', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                    >
+                                        <Truck size={16} /> Ship via Shiprocket
+                                    </button>
+                                )}
+
                                 <button
                                     type="submit"
                                     style={{ padding: '8px 16px', color: '#fff', background: '#1a1a1a', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
