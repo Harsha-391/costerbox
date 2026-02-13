@@ -8,154 +8,226 @@ import { Package, Truck, CheckCircle, Clock, MapPin, ExternalLink } from 'lucide
 export default function AdminOrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [editingOrder, setEditingOrder] = useState(null); // The order currently being updated
+    const [error, setError] = useState(null);
+    const [editingOrder, setEditingOrder] = useState(null);
 
-    // 1. Fetch All Orders
+    // Robust Date Helper
+    const getTime = (t) => {
+        if (!t) return 0;
+        if (typeof t.toMillis === 'function') return t.toMillis();
+        if (t instanceof Date) return t.getTime();
+        if (typeof t === 'number') return t;
+        if (typeof t === 'string') return new Date(t).getTime();
+        return 0;
+    };
+
+    const formatDate = (t) => {
+        const time = getTime(t);
+        return time ? new Date(time).toLocaleString() : 'N/A';
+    };
+
     const fetchOrders = async () => {
         setLoading(true);
-        const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        setOrders(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        setError(null);
+        try {
+            // Try simple query first to get ALL documents, then sort in memory to avoid index issues with mix of fields
+            const snapshot = await getDocs(collection(db, "orders"));
+            const results = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Robust Sort
+            results.sort((a, b) => getTime(b.createdAt) - getTime(a.createdAt));
+
+            setOrders(results);
+        } catch (err) {
+            console.error("Failed to fetch orders:", err);
+            setError("Unable to load orders. Please check console for details.");
+        }
         setLoading(false);
     };
 
     useEffect(() => { fetchOrders(); }, []);
 
-    // 2. Function to Update Status & Add Tracking
     const handleUpdateStatus = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
-        const newStatus = formData.get("status");
-        const trackingId = formData.get("trackingId");
-        const courier = formData.get("courier");
-        const trackingLink = formData.get("trackingLink");
 
         try {
             const orderRef = doc(db, "orders", editingOrder.id);
             await updateDoc(orderRef, {
-                status: newStatus,
+                status: formData.get("status"),
                 tracking: {
-                    id: trackingId,
-                    courier: courier,
-                    link: trackingLink,
+                    id: formData.get("trackingId"),
+                    courier: formData.get("courier"),
+                    link: formData.get("trackingLink"),
                     updatedAt: serverTimestamp()
                 }
             });
-            
+
             alert("Order Updated Successfully!");
-            setEditingOrder(null); // Close modal
-            fetchOrders(); // Refresh list
+            setEditingOrder(null);
+            fetchOrders();
         } catch (error) {
             console.error(error);
             alert("Failed to update order.");
         }
     };
 
-    if (loading) return <div className="p-10 text-center">Loading Orders...</div>;
+    const getStatusStyle = (status) => {
+        if (status === 'delivered') return { background: '#dcfce7', color: '#166534' };
+        if (status === 'shipped') return { background: '#dbeafe', color: '#1e40af' };
+        if (status === 'paid') return { background: '#e0f2fe', color: '#0369a1' };
+        return { background: '#fef9c3', color: '#854d0e' }; // pending/processing
+    };
+
+    if (loading) return <div style={{ padding: '50px', textAlign: 'center', color: '#666', fontSize: '1.2rem' }}>Loading Orders...</div>;
+    if (error) return <div style={{ padding: '50px', textAlign: 'center', color: 'red' }}>{error}</div>;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">Order Management</h1>
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>All Orders ({orders.length})</h1>
+                <button onClick={fetchOrders} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }}>Refresh</button>
+            </div>
 
-            <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+            <div style={{ overflowX: 'auto', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
+                    <thead>
+                        <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                            <th style={thStyle}>Date & ID</th>
+                            <th style={thStyle}>Customer</th>
+                            <th style={thStyle}>Contact / Address</th>
+                            <th style={thStyle}>Product</th>
+                            <th style={thStyle}>Amount</th>
+                            <th style={thStyle}>Status</th>
+                            <th style={thStyle}>Action</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody>
                         {orders.map((order) => (
-                            <tr key={order.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                                    {order.orderId ? order.orderId.slice(-8) : order.id.slice(0,8)}
+                            <tr key={order.id} style={{ borderBottom: '1px solid #f3f4f6', fontSize: '13px' }}>
+                                <td style={tdStyle}>
+                                    <div style={{ fontWeight: '600', color: '#111' }}>
+                                        {formatDate(order.createdAt).split(',')[0]}
+                                    </div>
+                                    <div style={{ fontFamily: 'monospace', color: '#888', marginTop: '4px' }}>
+                                        #{order.orderId ? order.orderId.slice(-6).toUpperCase() : order.id.slice(0, 6)}
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{order.shipping?.firstName} {order.shipping?.lastName}</div>
-                                    <div className="text-sm text-gray-500">{order.userEmail}</div>
+                                <td style={tdStyle}>
+                                    <div style={{ fontWeight: '600', color: '#1f2937' }}>
+                                        {order.shipping?.firstName} {order.shipping?.lastName}
+                                    </div>
+                                    <div style={{ color: '#6b7280' }}>
+                                        {order.userEmail}
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {order.product?.name}
+                                <td style={{ ...tdStyle, maxWidth: '250px', whiteSpace: 'normal' }}>
+                                    <div style={{ marginBottom: '4px' }}>
+                                        <strong style={{ color: '#444' }}>Ph:</strong> {order.shipping?.phone || 'N/A'}
+                                    </div>
+                                    <div style={{ color: '#666', lineHeight: '1.4' }}>
+                                        {order.shipping?.address}, {order.shipping?.city}, {order.shipping?.zip}
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                    {order.product?.price}
+                                <td style={tdStyle}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <img src={order.product?.image} style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover', background: '#eee' }} />
+                                        <span style={{ color: '#374151' }}>{order.product?.name}</span>
+                                    </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        ${order.status === 'delivered' ? 'bg-green-100 text-green-800' : 
-                                          order.status === 'shipped' ? 'bg-blue-100 text-blue-800' : 
-                                          'bg-yellow-100 text-yellow-800'}`}>
-                                        {order.status?.toUpperCase()}
+                                <td style={tdStyle}>
+                                    <div style={{ fontWeight: 'bold', color: '#111' }}>
+                                        {order.product?.price}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: order.paymentMethod === 'CD' ? 'orange' : 'green', marginTop: '2px', fontWeight: '600' }}>
+                                        {order.paymentMethod === 'CD' ? 'CASH ON DELIVERY' : 'PREPAID'}
+                                    </div>
+                                </td>
+                                <td style={tdStyle}>
+                                    <span style={{
+                                        padding: '4px 10px', display: 'inline-block', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
+                                        borderRadius: '20px', ...getStatusStyle(order.status)
+                                    }}>
+                                        {order.status || 'Pending'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button 
+                                <td style={tdStyle}>
+                                    <button
                                         onClick={() => setEditingOrder(order)}
-                                        className="text-indigo-600 hover:text-indigo-900 border border-indigo-200 px-3 py-1 rounded"
+                                        style={{
+                                            color: '#2563eb', border: '1px solid #bfdbfe', padding: '6px 10px',
+                                            borderRadius: '6px', background: '#eff6ff', cursor: 'pointer', fontWeight: '500'
+                                        }}
                                     >
-                                        Update Tracking
+                                        Manage
                                     </button>
                                 </td>
                             </tr>
                         ))}
+                        {orders.length === 0 && (
+                            <tr>
+                                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+                                    No orders found.
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
 
             {/* --- UPDATE MODAL --- */}
             {editingOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-2xl">
-                        <h2 className="text-xl font-bold mb-4">Update Order #{editingOrder.orderId?.slice(-6)}</h2>
-                        
-                        <form onSubmit={handleUpdateStatus} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Order Status</label>
-                                <select name="status" defaultValue={editingOrder.status} className="mt-1 block w-full p-2 border rounded">
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+                            Update Order #{editingOrder.orderId?.slice(-6)}
+                        </h2>
+
+                        <form onSubmit={handleUpdateStatus}>
+                            <div style={{ marginBottom: '16px' }}>
+                                <label style={labelStyle}>Order Status</label>
+                                <select name="status" defaultValue={editingOrder.status} style={inputStyle}>
                                     <option value="paid">Processing (Paid)</option>
                                     <option value="shipped">Shipped</option>
                                     <option value="delivered">Delivered</option>
                                 </select>
                             </div>
 
-                            <div className="border-t pt-4">
-                                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2"><Truck size={18}/> Tracking Details</h3>
-                                <input 
-                                    name="courier" 
-                                    placeholder="Courier Name (e.g. BlueDart)" 
+                            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
+                                <h3 style={{ fontWeight: '600', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Truck size={18} /> Tracking Details
+                                </h3>
+                                <input
+                                    name="courier"
+                                    placeholder="Courier Name (e.g. BlueDart)"
                                     defaultValue={editingOrder.tracking?.courier}
-                                    className="block w-full p-2 border rounded mb-2 text-sm"
+                                    style={{ ...inputStyle, marginBottom: '8px' }}
                                 />
-                                <input 
-                                    name="trackingId" 
-                                    placeholder="Tracking Number / AWB" 
+                                <input
+                                    name="trackingId"
+                                    placeholder="Tracking Number / AWB"
                                     defaultValue={editingOrder.tracking?.id}
-                                    className="block w-full p-2 border rounded mb-2 text-sm"
+                                    style={{ ...inputStyle, marginBottom: '8px' }}
                                 />
-                                <input 
-                                    name="trackingLink" 
-                                    placeholder="Tracking URL (http://...)" 
+                                <input
+                                    name="trackingLink"
+                                    placeholder="Tracking URL (http://...)"
                                     defaultValue={editingOrder.tracking?.link}
-                                    className="block w-full p-2 border rounded mb-2 text-sm"
+                                    style={{ ...inputStyle, marginBottom: '8px' }}
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button 
-                                    type="button" 
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                                <button
+                                    type="button"
                                     onClick={() => setEditingOrder(null)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+                                    style={{ padding: '8px 16px', color: '#374151', background: '#f3f4f6', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                                 >
                                     Cancel
                                 </button>
-                                <button 
-                                    type="submit" 
-                                    className="px-4 py-2 text-white bg-black rounded hover:bg-gray-800"
+                                <button
+                                    type="submit"
+                                    style={{ padding: '8px 16px', color: '#fff', background: '#1a1a1a', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                                 >
                                     Save Updates
                                 </button>
@@ -167,3 +239,31 @@ export default function AdminOrdersPage() {
         </div>
     );
 }
+
+const thStyle = {
+    padding: '12px 24px', textAlign: 'left', fontSize: '12px', fontWeight: '500',
+    color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em'
+};
+
+const tdStyle = {
+    padding: '16px 24px', whiteSpace: 'nowrap'
+};
+
+const modalOverlay = {
+    position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)'
+};
+
+const modalBox = {
+    background: '#fff', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '28rem',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+};
+
+const labelStyle = {
+    display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px'
+};
+
+const inputStyle = {
+    display: 'block', width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px',
+    fontSize: '14px', outline: 'none', boxSizing: 'border-box'
+};

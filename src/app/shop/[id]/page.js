@@ -1,19 +1,19 @@
 /* src/app/shop/[id]/page.js */
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation'; 
+import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../context/AuthContext';
 import ChatWindow from '../../../components/ChatWindow';
 import { ShoppingCart, CreditCard, MessageCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
-import '../../../styles/product.css'; 
+import '../../../styles/product.css';
 
 export default function ProductDetailsPage() {
-    const params = useParams(); 
+    const params = useParams();
     const router = useRouter();
     const { user } = useAuth();
-    
+
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [mainImage, setMainImage] = useState('');
@@ -30,7 +30,7 @@ export default function ProductDetailsPage() {
                 if (docSnap.exists()) {
                     const data = { id: docSnap.id, ...docSnap.data() };
                     setProduct(data);
-                    
+
                     if (data.featuredImage) setMainImage(data.featuredImage);
                     else if (data.media && data.media.length > 0) setMainImage(data.media[0]);
                     else setMainImage('https://via.placeholder.com/600x600?text=No+Image');
@@ -63,13 +63,13 @@ export default function ProductDetailsPage() {
     // --- RENDER PAGE ---
     return (
         <div className="product-page-wrapper">
-            
+
             {/* CHAT MODAL OVERLAY */}
             {isChatOpen && user && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <ChatWindow 
-                        chatId={`inquiry_${user.uid}_${product.id}`} 
-                        artisanId={product.artisanId} 
+                <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '16px' }}>
+                    <ChatWindow
+                        chatId={`inquiry_${user.uid}_${product.id}`}
+                        artisanId={product.artisanId}
                         productName={product.name}
                         onClose={() => setIsChatOpen(false)}
                     />
@@ -87,14 +87,14 @@ export default function ProductDetailsPage() {
                         <img src={mainImage} alt={product.name} className="main-image" />
                         {product.badge && <span className="product-badge">{product.badge}</span>}
                     </div>
-                    
+
                     {product.media && product.media.length > 1 && (
                         <div className="thumbnail-row">
                             {product.media.map((imgUrl, index) => (
-                                <img 
-                                    key={index} 
-                                    src={imgUrl} 
-                                    alt={`Thumbnail ${index}`} 
+                                <img
+                                    key={index}
+                                    src={imgUrl}
+                                    alt={`Thumbnail ${index}`}
                                     className={`thumbnail ${mainImage === imgUrl ? 'active-thumb' : ''}`}
                                     onClick={() => setMainImage(imgUrl)}
                                 />
@@ -108,7 +108,7 @@ export default function ProductDetailsPage() {
                     <span className="product-region">{product.region || 'Rajasthan, India'}</span>
                     <h1 className="product-title">{product.name}</h1>
                     <p className="product-price">₹{product.price}</p>
-                    
+
                     <div className="product-description">
                         <h3>About this piece</h3>
                         <p>{product.description || 'No description provided for this artifact.'}</p>
@@ -130,7 +130,7 @@ export default function ProductDetailsPage() {
                         <button className="btn-add-cart" onClick={() => alert("Added to cart (Demo)")}>
                             <ShoppingCart size={20} /> Add to Bag
                         </button>
-                        
+
                         {/* --- UPDATED BUY BUTTON --- */}
                         <button className="btn-buy-now" onClick={handleBuyNow}>
                             <CreditCard size={20} /> Buy Now
@@ -139,7 +139,7 @@ export default function ProductDetailsPage() {
 
                     {/* CUSTOMIZE BUTTON */}
                     {product.isCustomizable && (
-                        <button 
+                        <button
                             className="btn-customize"
                             onClick={() => {
                                 if (!user) alert("Please login to chat with the artisan.");

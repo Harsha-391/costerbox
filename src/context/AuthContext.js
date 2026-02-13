@@ -19,19 +19,40 @@ export const AuthProvider = ({ children }) => {
             if (firebaseUser) {
                 // 1. User is authenticated (Email/Pass matched)
 
-                // 2. CHECK DATABASE FOR ROLE
-                const userRef = doc(db, "users", firebaseUser.email); // We use Email as ID for simplicity
-                const userSnap = await getDoc(userRef);
+                // 0. HARDCODED SUPER ADMINS (For Development/Rescue)
+                // Add your Google Account email here to force Admin access
+                const SUPER_ADMIN_EMAILS = [
+                    "sneeze.media@gmail.com",
+                    "admin@costerbox.in"
+                ];
 
-                if (userSnap.exists()) {
-                    setRole(userSnap.data().role); // 'admin' or 'artisan'
-                } else {
-                    setRole('guest'); // Valid login, but no role assigned
+                try {
+                    // 1. Check Hardcoded List First
+                    if (SUPER_ADMIN_EMAILS.includes(firebaseUser.email)) {
+                        console.log("User authorized via Hardcoded List:", firebaseUser.email);
+                        setRole('superadmin');
+                    } else {
+                        // 2. CHECK DATABASE FOR ROLE
+                        const userRef = doc(db, "users", firebaseUser.email);
+                        const userSnap = await getDoc(userRef);
+
+                        if (userSnap.exists()) {
+                            setRole(userSnap.data().role); // 'admin', 'artisan', or 'user'
+                        } else {
+                            console.warn("User document not found. Defaulting to 'user' role.");
+                            // Default to 'user' so they are logged in, just not admin
+                            setRole('user');
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error fetching user role:", error);
+                    setRole('user'); // Fallback to user on error
                 }
 
                 setUser({
                     uid: firebaseUser.uid,
                     email: firebaseUser.email,
+                    displayName: firebaseUser.displayName
                 });
             } else {
                 setUser(null);

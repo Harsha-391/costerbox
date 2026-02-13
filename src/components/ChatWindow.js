@@ -1,13 +1,13 @@
 /* src/components/ChatWindow.js */
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { 
-    collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, setDoc, getDoc 
+import {
+    collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, setDoc, getDoc
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../lib/firebase"; 
+import { db, storage } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { Send, Mic, Image as ImageIcon, ShieldAlert, XCircle } from "lucide-react"; 
+import { Send, Mic, Image as ImageIcon, ShieldAlert, XCircle } from "lucide-react";
 
 export default function ChatWindow({ chatId, artisanId, productName, onClose }) {
     const { user, role } = useAuth();
@@ -16,11 +16,10 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
     const [newMessage, setNewMessage] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [uploading, setUploading] = useState(false);
-    
-    const mediaRecorderRef = useRef(null); 
+
+    const mediaRecorderRef = useRef(null);
     const messagesEndRef = useRef(null);
 
-    // 1. Initialize Chat Room if it doesn't exist
     useEffect(() => {
         const initChat = async () => {
             if (!chatId || !user) return;
@@ -29,7 +28,7 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
 
             if (!chatSnap.exists()) {
                 await setDoc(chatRef, {
-                    productId: chatId.split('_').pop(), // Extract ID from "inquiry_uid_pid"
+                    productId: chatId.split('_').pop(),
                     customerId: user.uid,
                     artisanId: artisanId || 'unassigned',
                     status: 'open',
@@ -41,7 +40,6 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
         initChat();
     }, [chatId, user, artisanId]);
 
-    // 2. Listen to Chat & Messages
     useEffect(() => {
         if (!chatId) return;
 
@@ -61,7 +59,6 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // 3. Send Message
     const sendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
@@ -75,7 +72,6 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
         setNewMessage("");
     };
 
-    // 4. Handle Media (Image)
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -91,7 +87,6 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
         setUploading(false);
     };
 
-    // 5. Handle Audio
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -117,7 +112,6 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
         setIsRecording(false);
     };
 
-    // 6. Admin Hijack
     const toggleHijack = async () => {
         if (role !== "admin") return;
         const newStatus = chatData?.hijackedBy ? null : user.uid;
@@ -131,31 +125,44 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
     };
 
     return (
-        <div className="flex flex-col h-[600px] w-full max-w-lg bg-white shadow-2xl rounded-xl overflow-hidden border border-gray-200">
+        <div style={styles.container}>
             {/* Header */}
-            <div className="bg-gray-900 text-white p-4 flex justify-between items-center">
+            <div style={styles.header}>
                 <div>
-                    <h3 className="font-bold">{productName}</h3>
-                    <span className="text-xs text-gray-400">Customization Request</span>
+                    <h3 style={{ fontWeight: 'bold', margin: 0 }}>{productName}</h3>
+                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>Customization Request</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {role === 'admin' && (
-                        <button onClick={toggleHijack} className={`text-xs px-2 py-1 rounded ${chatData?.hijackedBy ? 'bg-red-500' : 'bg-gray-700'}`}>
+                        <button
+                            onClick={toggleHijack}
+                            style={{
+                                fontSize: '12px', padding: '4px 8px', borderRadius: '4px', border: 'none', color: '#fff', cursor: 'pointer',
+                                background: chatData?.hijackedBy ? '#ef4444' : '#374151'
+                            }}
+                        >
                             {chatData?.hijackedBy ? "Release" : "Hijack"}
                         </button>
                     )}
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><XCircle /></button>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
+                        <XCircle />
+                    </button>
                 </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <div style={styles.messagesArea}>
                 {messages.map(msg => (
-                    <div key={msg.id} className={`flex ${msg.senderId === user.uid ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] p-3 rounded-xl text-sm ${msg.senderId === user.uid ? 'bg-black text-white' : 'bg-white border text-gray-800'}`}>
-                            {msg.type === 'text' && <p>{msg.text}</p>}
-                            {msg.type === 'image' && <img src={msg.mediaUrl} className="rounded-lg max-h-40" />}
-                            {msg.type === 'audio' && <audio src={msg.mediaUrl} controls className="h-8 w-48" />}
+                    <div key={msg.id} style={{ display: 'flex', justifyContent: msg.senderId === user.uid ? 'flex-end' : 'flex-start' }}>
+                        <div style={{
+                            maxWidth: '80%', padding: '12px', borderRadius: '12px', fontSize: '14px',
+                            ...(msg.senderId === user.uid
+                                ? { background: '#1a1a1a', color: '#fff' }
+                                : { background: '#fff', border: '1px solid #e5e7eb', color: '#1f2937' })
+                        }}>
+                            {msg.type === 'text' && <p style={{ margin: 0 }}>{msg.text}</p>}
+                            {msg.type === 'image' && <img src={msg.mediaUrl} style={{ borderRadius: '8px', maxHeight: '160px' }} />}
+                            {msg.type === 'audio' && <audio src={msg.mediaUrl} controls style={{ height: '32px', width: '192px' }} />}
                         </div>
                     </div>
                 ))}
@@ -163,28 +170,57 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t bg-white">
+            <div style={styles.inputArea}>
                 {canChat() ? (
-                    <form onSubmit={sendMessage} className="flex gap-2 items-center">
-                        <label className="cursor-pointer text-gray-500 hover:text-black">
+                    <form onSubmit={sendMessage} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <label style={{ cursor: 'pointer', color: '#6b7280' }}>
                             <ImageIcon size={20} />
-                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
                         </label>
-                        <button type="button" onClick={isRecording ? stopRecording : startRecording} className={isRecording ? 'text-red-500 animate-pulse' : 'text-gray-500 hover:text-black'}>
+                        <button
+                            type="button"
+                            onClick={isRecording ? stopRecording : startRecording}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: isRecording ? '#ef4444' : '#6b7280' }}
+                        >
                             <Mic size={20} />
                         </button>
-                        <input 
-                            value={newMessage} 
-                            onChange={e => setNewMessage(e.target.value)} 
+                        <input
+                            value={newMessage}
+                            onChange={e => setNewMessage(e.target.value)}
                             placeholder={isRecording ? "Recording..." : "Type request..."}
-                            className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            style={styles.textInput}
                         />
-                        <button type="submit" className="bg-black text-white p-2 rounded-full"><Send size={16} /></button>
+                        <button type="submit" style={styles.sendBtn}><Send size={16} /></button>
                     </form>
                 ) : (
-                    <p className="text-center text-red-500 text-xs font-bold"> Chat locked by Admin</p>
+                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '12px', fontWeight: 'bold', margin: 0 }}>
+                        Chat locked by Admin
+                    </p>
                 )}
             </div>
         </div>
     );
 }
+
+const styles = {
+    container: {
+        display: 'flex', flexDirection: 'column', height: '600px', width: '100%', maxWidth: '32rem',
+        background: '#fff', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', borderRadius: '12px', overflow: 'hidden',
+        border: '1px solid #e5e7eb'
+    },
+    header: {
+        background: '#111827', color: '#fff', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+    },
+    messagesArea: {
+        flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f9fafb'
+    },
+    inputArea: {
+        padding: '12px', borderTop: '1px solid #e5e7eb', background: '#fff'
+    },
+    textInput: {
+        flex: 1, background: '#f3f4f6', borderRadius: '20px', padding: '8px 16px', fontSize: '14px', border: 'none', outline: 'none'
+    },
+    sendBtn: {
+        background: '#1a1a1a', color: '#fff', padding: '8px', borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }
+};
