@@ -1,13 +1,17 @@
 /* src/app/secured/superadmin/add-product/page.js */
 "use client";
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { db, storage } from '../../../../lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './add-product.css';
 
-// 1. Rename the main function to an internal component and REMOVE "export default"
+// Dynamically import React Quill (SSR-safe for Next.js)
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+import 'react-quill-new/dist/quill.snow.css';
+
 function AddProductContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -20,32 +24,126 @@ function AddProductContent() {
     const [formData, setFormData] = useState({
         title: '', description: '', price: '', comparePrice: '', costPerItem: '',
         stock: '', sku: '', barcode: '', weight: '', hsCode: '',
-        status: 'Active', category: 'Sarees', vendor: 'Costerbox',
-        media: []
+        status: 'Active', category: '', vendor: 'Costerbox',
+        media: [], tags: '',
+        seoTitle: '', seoDesc: '', seoHandle: ''
     });
 
     // MEDIA & CATEGORY STATE
-    const [categories, setCategories] = useState(['Sarees', 'Lehengas', 'Suits', 'Fabrics', 'Menswear']);
+    const [categories, setCategories] = useState([]);
+
+    // ========= FETCH CATEGORIES FROM FIRESTORE =========
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const catSnap = await getDocs(collection(db, 'categories'));
+                const cats = catSnap.docs.map(d => d.data().name).filter(Boolean);
+                setCategories(cats);
+                if (cats.length > 0 && !formData.category) {
+                    setFormData(prev => ({ ...prev, category: cats[0] }));
+                }
+            } catch (err) {
+                console.error('Error fetching categories:', err);
+                setCategories(['Sarees', 'Lehengas', 'Suits', 'Fabrics', 'Menswear']);
+            }
+        };
+        fetchCategories();
+    }, []);
     const [isAddingCategory, setIsAddingCategory] = useState(false);
     const [newCat, setNewCat] = useState('');
     const [imageFiles, setImageFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
 
-    // FETCH DATA IF EDITING
+    // DRAG & DROP STATE
+    const [dragIndex, setDragIndex] = useState(null);
+    const [dragOverIndex, setDragOverIndex] = useState(null);
+    const [dragSource, setDragSource] = useState(null); // 'existing' or 'new'
+
+    // SEO AUTO-GENERATE STATE
+    const [seoManualTitle, setSeoManualTitle] = useState(false);
+    const [seoManualDesc, setSeoManualDesc] = useState(false);
+    const [seoManualHandle, setSeoManualHandle] = useState(false);
+
+    // ========= QUILL CONFIG =========
+    const quillModules = useMemo(() => ({
+        toolbar: [
+            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+            [{ 'font': [] }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'script': 'sub' }, { 'script': 'super' }],
+            ['blockquote', 'code-block'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'indent': '-1' }, { 'indent': '+1' }],
+            [{ 'direction': 'rtl' }],
+            [{ 'align': [] }],
+            ['link', 'image', 'video'],
+            ['clean']
+        ],
+    }), []);
+
+    const quillFormats = [
+        'header', 'font', 'size',
+        'bold', 'italic', 'underline', 'strike',
+        'color', 'background', 'script',
+        'blockquote', 'code-block',
+        'list', 'indent', 'direction', 'align',
+        'link', 'image', 'video'
+    ];
+
+    // ========= FETCH DATA IF EDITING =========
     useEffect(() => {
         if (editId) {
             const fetchData = async () => {
                 const docSnap = await getDoc(doc(db, "products", editId));
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    setFormData({ ...data, media: data.media || (data.featuredImage ? [data.featuredImage] : []) });
+                    setFormData({
+                        ...data,
+                        media: data.media || (data.featuredImage ? [data.featuredImage] : []),
+                        seoTitle: data.seoTitle || '',
+                        seoDesc: data.seoDesc || '',
+                        seoHandle: data.seoHandle || ''
+                    });
+                    // If editing & seo fields were manually set, mark them as manual
+                    if (data.seoTitle) setSeoManualTitle(true);
+                    if (data.seoDesc) setSeoManualDesc(true);
+                    if (data.seoHandle) setSeoManualHandle(true);
                 }
             };
             fetchData();
         }
     }, [editId]);
 
-    // HANDLERS
+    // ========= SEO AUTO-GENERATION =========
+    useEffect(() => {
+        if (!seoManualTitle && formData.title) {
+            setFormData(prev => ({ ...prev, seoTitle: prev.title }));
+        }
+    }, [formData.title, seoManualTitle]);
+
+    useEffect(() => {
+        if (!seoManualDesc && formData.description) {
+            const plainText = formData.description.replace(/<[^>]*>/g, '').trim();
+            const truncated = plainText.length > 160 ? plainText.substring(0, 157) + '...' : plainText;
+            setFormData(prev => ({ ...prev, seoDesc: truncated }));
+        }
+    }, [formData.description, seoManualDesc]);
+
+    useEffect(() => {
+        if (!seoManualHandle && formData.title) {
+            const handle = formData.title
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+            setFormData(prev => ({ ...prev, seoHandle: handle }));
+        }
+    }, [formData.title, seoManualHandle]);
+
+    // ========= HANDLERS =========
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleFileSelect = (e) => {
@@ -68,22 +166,87 @@ function AddProductContent() {
         }
     };
 
-    const handleAddCategory = () => {
-        if (newCat) {
-            setCategories([...categories, newCat]);
-            setFormData({ ...formData, category: newCat });
+    // ========= DRAG & DROP (Shopify-style) =========
+    const handleDragStart = (e, index, source) => {
+        setDragIndex(index);
+        setDragSource(source);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, index, source) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        // Only allow reordering within the same group
+        if (source === dragSource) {
+            setDragOverIndex(index);
+        }
+    };
+
+    const handleDragLeave = () => {
+        setDragOverIndex(null);
+    };
+
+    const handleDrop = (e, dropIndex, source) => {
+        e.preventDefault();
+        if (dragIndex === null || dragIndex === dropIndex || source !== dragSource) {
+            setDragIndex(null);
+            setDragOverIndex(null);
+            setDragSource(null);
+            return;
+        }
+
+        if (source === 'existing') {
+            const updated = [...formData.media];
+            const [draggedItem] = updated.splice(dragIndex, 1);
+            updated.splice(dropIndex, 0, draggedItem);
+            setFormData({ ...formData, media: updated });
+        } else {
+            const updatedFiles = [...imageFiles];
+            const updatedPreviews = [...previews];
+            const [draggedFile] = updatedFiles.splice(dragIndex, 1);
+            const [draggedPreview] = updatedPreviews.splice(dragIndex, 1);
+            updatedFiles.splice(dropIndex, 0, draggedFile);
+            updatedPreviews.splice(dropIndex, 0, draggedPreview);
+            setImageFiles(updatedFiles);
+            setPreviews(updatedPreviews);
+        }
+
+        setDragIndex(null);
+        setDragOverIndex(null);
+        setDragSource(null);
+    };
+
+    const handleDragEnd = () => {
+        setDragIndex(null);
+        setDragOverIndex(null);
+        setDragSource(null);
+    };
+
+    const handleAddCategory = async () => {
+        if (newCat && newCat.trim()) {
+            const trimmed = newCat.trim();
+            try {
+                // Save to Firestore categories collection
+                await addDoc(collection(db, 'categories'), { name: trimmed, createdAt: new Date() });
+                setCategories([...categories, trimmed]);
+                setFormData({ ...formData, category: trimmed });
+            } catch (err) {
+                console.error('Error adding category:', err);
+                setCategories([...categories, trimmed]);
+                setFormData({ ...formData, category: trimmed });
+            }
+            setNewCat('');
             setIsAddingCategory(false);
         }
     };
 
-    // SUBMIT LOGIC
+    // ========= SUBMIT =========
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             let finalMedia = [...formData.media];
 
-            // Upload New Images
             if (imageFiles.length > 0) {
                 setUploading(true);
                 const uploadPromises = imageFiles.map(async (file) => {
@@ -96,12 +259,19 @@ function AddProductContent() {
                 setUploading(false);
             }
 
+            // Parse tags string into array
+            const tagsArray = (formData.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
             const payload = {
                 ...formData,
                 price: Number(formData.price),
                 stock: Number(formData.stock),
                 media: finalMedia,
                 featuredImage: finalMedia[0] || '',
+                tags: tagsArray,
+                seoTitle: formData.seoTitle,
+                seoDesc: formData.seoDesc,
+                seoHandle: formData.seoHandle,
                 updatedAt: new Date()
             };
 
@@ -119,6 +289,10 @@ function AddProductContent() {
         }
         setLoading(false);
     };
+
+    // ========= SEO CHARACTER COUNTS =========
+    const seoTitleCount = (formData.seoTitle || '').length;
+    const seoDescCount = (formData.seoDesc || '').length;
 
     return (
         <div className="page-container">
@@ -144,39 +318,83 @@ function AddProductContent() {
                         </div>
                         <div className="form-group">
                             <label>Description</label>
-                            <div className="rich-text-wrapper">
-                                <div className="toolbar">
-                                    <span className="tool-btn">B</span>
-                                    <span className="tool-btn">I</span>
-                                    <span className="tool-btn">U</span>
-                                    <span className="tool-btn">Link</span>
-                                </div>
-                                <textarea name="description" value={formData.description} onChange={handleChange} className="rich-editor" placeholder="Product details..."></textarea>
+                            <div className="quill-wrapper">
+                                <ReactQuill
+                                    theme="snow"
+                                    value={formData.description}
+                                    onChange={(value) => setFormData({ ...formData, description: value })}
+                                    modules={quillModules}
+                                    formats={quillFormats}
+                                    placeholder="Write a detailed product description..."
+                                />
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Media */}
+                    {/* 2. Media — Drag & Drop Reorder */}
                     <div className="card">
-                        <h3>Media</h3>
+                        <h3>
+                            Media
+                            {(formData.media.length > 0 || previews.length > 0) && (
+                                <span className="media-hint">— drag to reorder, first image is featured</span>
+                            )}
+                        </h3>
                         <div className="media-dropzone">
                             <input type="file" multiple onChange={handleFileSelect} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
-                            <p>Add files or drop files to upload</p>
+                            <div className="dropzone-icon">📁</div>
+                            <p>Drag & drop images here</p>
+                            <span className="dropzone-link">or click to browse files</span>
                         </div>
-                        <div className="media-grid">
-                            {formData.media.map((url, i) => (
-                                <div key={i} className="media-item">
-                                    <img src={url} alt="media" />
-                                    <button type="button" onClick={() => removeMedia(i, true)} className="remove-media">×</button>
+
+                        {/* Existing Media (from DB when editing) */}
+                        {formData.media.length > 0 && (
+                            <div className="media-grid">
+                                {formData.media.map((url, i) => (
+                                    <div
+                                        key={`existing-${i}`}
+                                        className={`media-item${dragIndex === i && dragSource === 'existing' ? ' dragging' : ''}${dragOverIndex === i && dragSource === 'existing' ? ' drag-over' : ''}${i === 0 ? ' featured' : ''}`}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, i, 'existing')}
+                                        onDragOver={(e) => handleDragOver(e, i, 'existing')}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => handleDrop(e, i, 'existing')}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <div className="drag-handle">⠿</div>
+                                        <div className="media-order">{i + 1}</div>
+                                        <img src={url} alt="media" />
+                                        <button type="button" onClick={() => removeMedia(i, true)} className="remove-media">×</button>
+                                        {i === 0 && <div className="featured-badge">★ MAIN</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* New Uploads (Previews) */}
+                        {previews.length > 0 && (
+                            <>
+                                {formData.media.length > 0 && <div className="media-divider">New uploads</div>}
+                                <div className="media-grid">
+                                    {previews.map((url, i) => (
+                                        <div
+                                            key={`new-${i}`}
+                                            className={`media-item new-upload${dragIndex === i && dragSource === 'new' ? ' dragging' : ''}${dragOverIndex === i && dragSource === 'new' ? ' drag-over' : ''}`}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, i, 'new')}
+                                            onDragOver={(e) => handleDragOver(e, i, 'new')}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, i, 'new')}
+                                            onDragEnd={handleDragEnd}
+                                        >
+                                            <div className="drag-handle">⠿</div>
+                                            <div className="media-order">{formData.media.length + i + 1}</div>
+                                            <img src={url} alt="preview" />
+                                            <button type="button" onClick={() => removeMedia(i, false)} className="remove-media">×</button>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                            {previews.map((url, i) => (
-                                <div key={i} className="media-item">
-                                    <img src={url} alt="preview" style={{ opacity: 0.7 }} />
-                                    <button type="button" onClick={() => removeMedia(i, false)} className="remove-media">×</button>
-                                </div>
-                            ))}
-                        </div>
+                            </>
+                        )}
                     </div>
 
                     {/* 3. Pricing */}
@@ -236,12 +454,106 @@ function AddProductContent() {
                         </div>
                     </div>
 
-                    {/* 6. SEO Preview */}
-                    <div className="card">
-                        <h3>Search engine listing</h3>
-                        <div style={{ color: '#1a0dab', fontSize: '18px', fontWeight: '500' }}>{formData.title || "Product Title"}</div>
-                        <div style={{ color: '#006621', fontSize: '14px' }}>https://costerbox.in/products/{formData.sku || '...'}</div>
-                        <div style={{ color: '#545454', fontSize: '13px' }}>{formData.description ? formData.description.substring(0, 150) + "..." : "Product description goes here..."}</div>
+                    {/* 6. SEO — Dynamic Meta Title & Description */}
+                    <div className="card seo-card">
+                        <h3>🔍 Search Engine Listing</h3>
+
+                        {/* Google Preview */}
+                        <div className="seo-preview">
+                            <div className="seo-preview-label">Google Preview</div>
+                            <div className="seo-url">
+                                https://costerbox.in/products/{formData.seoHandle || formData.sku || '...'}
+                            </div>
+                            <div className="seo-title-preview">
+                                {formData.seoTitle || 'Product Title'}
+                            </div>
+                            <div className="seo-desc-preview">
+                                {formData.seoDesc || 'Product description will appear here automatically when you write a description above.'}
+                            </div>
+                        </div>
+
+                        {/* SEO Page Title */}
+                        <div className="form-group">
+                            <label>
+                                Page Title
+                                {!seoManualTitle && formData.seoTitle && (
+                                    <span className="seo-auto-badge">⚡ Auto-generated</span>
+                                )}
+                            </label>
+                            <input
+                                className="input-field"
+                                value={formData.seoTitle}
+                                onChange={(e) => {
+                                    setSeoManualTitle(true);
+                                    setFormData({ ...formData, seoTitle: e.target.value });
+                                }}
+                                placeholder="SEO page title"
+                            />
+                            <div className={`seo-counter${seoTitleCount > 70 ? ' danger' : seoTitleCount > 60 ? ' warning' : ''}`}>
+                                {seoTitleCount}/70 characters
+                                {seoManualTitle && (
+                                    <span className="seo-reset" onClick={() => setSeoManualTitle(false)}>
+                                        Reset to auto
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* SEO Meta Description */}
+                        <div className="form-group">
+                            <label>
+                                Meta Description
+                                {!seoManualDesc && formData.seoDesc && (
+                                    <span className="seo-auto-badge">⚡ Auto-generated</span>
+                                )}
+                            </label>
+                            <textarea
+                                className="input-field seo-textarea"
+                                value={formData.seoDesc}
+                                onChange={(e) => {
+                                    setSeoManualDesc(true);
+                                    setFormData({ ...formData, seoDesc: e.target.value });
+                                }}
+                                placeholder="SEO meta description"
+                            />
+                            <div className={`seo-counter${seoDescCount > 160 ? ' danger' : seoDescCount > 140 ? ' warning' : ''}`}>
+                                {seoDescCount}/160 characters
+                                {seoManualDesc && (
+                                    <span className="seo-reset" onClick={() => setSeoManualDesc(false)}>
+                                        Reset to auto
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* URL Handle */}
+                        <div className="form-group">
+                            <label>
+                                URL Handle
+                                {!seoManualHandle && formData.seoHandle && (
+                                    <span className="seo-auto-badge">⚡ Auto-generated</span>
+                                )}
+                            </label>
+                            <div className="handle-input-wrapper">
+                                <span className="handle-prefix">/products/</span>
+                                <input
+                                    className="input-field handle-input"
+                                    value={formData.seoHandle}
+                                    onChange={(e) => {
+                                        setSeoManualHandle(true);
+                                        setFormData({ ...formData, seoHandle: e.target.value });
+                                    }}
+                                    placeholder="product-url-handle"
+                                />
+                            </div>
+                            {seoManualHandle && (
+                                <div className="seo-counter">
+                                    <span className="seo-reset" onClick={() => setSeoManualHandle(false)}>
+                                        Reset to auto
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                 </div>
@@ -318,8 +630,8 @@ function AddProductContent() {
 
                         <div className="form-group">
                             <label>Tags</label>
-                            <input placeholder="Vintage, Cotton, Summer" className="input-field" />
-                            <div className="helper-text">Separate tags with a comma</div>
+                            <input name="tags" value={formData.tags || ''} onChange={handleChange} placeholder="new-arrival, bestseller, featured" className="input-field" />
+                            <div className="helper-text">Separate tags with a comma. Use: <strong>new-arrival</strong>, <strong>bestseller</strong>, <strong>featured</strong> to show on homepage sections.</div>
                         </div>
                     </div>
 
@@ -338,7 +650,7 @@ function AddProductContent() {
     );
 }
 
-// 2. Create the new default export wrapper here
+// Suspense wrapper for useSearchParams
 export default function AddProductPage() {
     return (
         <Suspense fallback={<div style={{ padding: '50px', textAlign: 'center' }}>Loading form...</div>}>

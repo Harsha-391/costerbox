@@ -1,19 +1,23 @@
 /* src/app/shop/page.js */
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import ChatWindow from '../../components/ChatWindow';
-import Link from 'next/link'; // <--- 1. IMPORT ADDED
+import Link from 'next/link';
 import { MessageCircle, ShoppingBag, X } from 'lucide-react';
 import '../../styles/shop.css';
 
-export default function ShopPage() {
+function ShopPageContent() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const catFromUrl = searchParams.get('cat');
+
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [filter, setFilter] = useState('All');
+    const [filter, setFilter] = useState(catFromUrl || 'All');
     const [loading, setLoading] = useState(true);
 
     // Track which product is currently being discussed
@@ -24,7 +28,7 @@ export default function ShopPage() {
         const fetchData = async () => {
             try {
                 const catSnap = await getDocs(collection(db, 'categories'));
-                setCategories(catSnap.docs.map(d => d.data().name));
+                setCategories(catSnap.docs.map(d => d.data().name).filter(Boolean));
 
                 const prodSnap = await getDocs(collection(db, 'products'));
                 setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -37,10 +41,24 @@ export default function ShopPage() {
         fetchData();
     }, []);
 
+    // Update filter when URL param changes
+    useEffect(() => {
+        if (catFromUrl) setFilter(catFromUrl);
+    }, [catFromUrl]);
+
     // --- FILTER LOGIC ---
+    // Support filtering by category name, region, or tags (like "bestseller", "new-arrival")
     const filteredProducts = filter === 'All'
         ? products
-        : products.filter(p => p.category === filter || p.region === filter);
+        : products.filter(p => {
+            // Match by category
+            if (p.category === filter) return true;
+            // Match by region
+            if (p.region === filter) return true;
+            // Match by tag (tags stored as array in Firestore)
+            if (Array.isArray(p.tags) && p.tags.includes(filter.toLowerCase())) return true;
+            return false;
+        });
 
     // --- HANDLER: OPEN CHAT ---
     const handleOpenChat = (product) => {
@@ -193,5 +211,14 @@ export default function ShopPage() {
 
             </div>
         </>
+    );
+}
+
+// Suspense wrapper for useSearchParams
+export default function ShopPage() {
+    return (
+        <Suspense fallback={<div style={{ padding: '100px', textAlign: 'center' }}>Loading Archive...</div>}>
+            <ShopPageContent />
+        </Suspense>
     );
 }

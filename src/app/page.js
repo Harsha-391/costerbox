@@ -1,121 +1,383 @@
 /* src/app/page.js */
 "use client";
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { db } from '../lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import '@/styles/home.css';
 
 export default function HomePage() {
+  // ========= STATE =========
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  // Dynamic data from Firestore
+  const [categories, setCategories] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ========= FETCH DATA FROM FIRESTORE =========
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch categories
+        const catSnap = await getDocs(collection(db, 'categories'));
+        const cats = catSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.name);
+        setCategories(cats);
+
+        // Fetch products
+        const prodSnap = await getDocs(collection(db, 'products'));
+        const prods = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setAllProducts(prods);
+      } catch (err) {
+        console.error('Error fetching homepage data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // ========= DERIVE PRODUCT SECTIONS FROM TAGS =========
+  const newArrivals = allProducts.filter(p =>
+    Array.isArray(p.tags) && p.tags.includes('new-arrival') && p.status === 'Active'
+  ).slice(0, 8);
+
+  const bestsellers = allProducts.filter(p =>
+    Array.isArray(p.tags) && p.tags.includes('bestseller') && p.status === 'Active'
+  ).slice(0, 8);
+
+  // Featured products (fallback to latest if no tags)
+  const featuredProducts = allProducts.filter(p =>
+    Array.isArray(p.tags) && p.tags.includes('featured') && p.status === 'Active'
+  ).slice(0, 8);
+
+  // Get product image
+  const getProductImage = (product, index = 0) => {
+    if (index === 0) {
+      return product.featuredImage || (product.media && product.media[0]) || 'https://via.placeholder.com/400x600?text=No+Image';
+    }
+    // Second image for hover
+    if (product.media && product.media.length > 1) return product.media[1];
+    return product.featuredImage || (product.media && product.media[0]) || '';
+  };
+
+  // ========= HERO SLIDER =========
+  const heroSlides = [
+    {
+      image: '/heroimage.png',
+      subtitle: 'Est. 2024 • Jaipur, India',
+      title: 'TRIBAL ART,\nREIMAGINED.',
+      cta: 'Shop Now',
+      link: '/shop',
+      align: 'center'
+    },
+    {
+      image: '/img14.jpg',
+      subtitle: 'Ready to Ship',
+      title: 'DISPATCH WITHIN\n72 HOURS',
+      cta: 'Shop Collection',
+      link: '/shop',
+      align: 'left'
+    }
+  ];
+
+  const goToSlide = useCallback((index) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentSlide(index);
+    setTimeout(() => setIsTransitioning(false), 800);
+  }, [isTransitioning]);
+
+  const nextSlide = useCallback(() => {
+    goToSlide((currentSlide + 1) % heroSlides.length);
+  }, [currentSlide, heroSlides.length, goToSlide]);
+
+  useEffect(() => {
+    const timer = setInterval(nextSlide, 5000);
+    return () => clearInterval(timer);
+  }, [nextSlide]);
+
+  // ========= TESTIMONIALS =========
+  const testimonials = [
+    { text: "Thanks team, I have received the order. For sure. I am definitely going to recommend you guys for your quick service.", author: "Aanisah", location: "Spain" },
+    { text: "I got my outfit and I'm just blown by how beautiful the outfit and packaging is. Amazing fit! Will definitely be ordering again very soon.", author: "Priya K.", location: "Mumbai" },
+    { text: "Thanks for the saree! Wore it for my pre wedding shoot. Loved it!! Thanks for the saree and on time delivery!", author: "Meera R.", location: "Bangalore" },
+    { text: "Hi thank you, your products are very nice! I have shared the links with some friends too and love that you have plus sizes!", author: "Sarah M.", location: "London" },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [testimonials.length]);
+
+  // ========= Product Card Component =========
+  const ProductCard = ({ product }) => {
+    const img1 = getProductImage(product, 0);
+    const img2 = getProductImage(product, 1);
+    const name = product.title || product.name || 'Product';
+    const price = product.price ? `₹${Number(product.price).toLocaleString('en-IN')}` : '';
+    const comparePrice = product.comparePrice ? `₹${Number(product.comparePrice).toLocaleString('en-IN')}` : '';
+
+    // Determine tag to show
+    let tag = null;
+    if (Array.isArray(product.tags)) {
+      if (product.tags.includes('new-arrival')) tag = 'New';
+      else if (product.tags.includes('bestseller')) tag = 'Bestseller';
+      else if (product.tags.includes('sale')) tag = 'Sale';
+    }
+    if (product.badge) tag = product.badge;
+
+    return (
+      <Link href={`/shop/${product.id}`} className="pc-card">
+        <div className="pc-image-box">
+          <img src={img1} alt={name} className="pc-img pc-img-primary" />
+          {img2 && img2 !== img1 && <img src={img2} alt={name} className="pc-img pc-img-hover" />}
+          {tag && (
+            <span className={`pc-tag ${tag === 'Sale' ? 'pc-tag-sale' : tag === 'Bestseller' ? 'pc-tag-best' : ''}`}>
+              {tag}
+            </span>
+          )}
+          <button className="pc-quick-add" onClick={(e) => { e.preventDefault(); }}>
+            Quick View
+          </button>
+        </div>
+        <div className="pc-details">
+          <h3 className="pc-name">{name}</h3>
+          <div className="pc-pricing">
+            <span className="pc-price">{price}</span>
+            {comparePrice && <span className="pc-compare">{comparePrice}</span>}
+          </div>
+        </div>
+      </Link>
+    );
+  };
+
+  // ========= CATEGORY IMAGE (use first product image from that category) =========
+  const getCategoryImage = (catName) => {
+    const product = allProducts.find(p => p.category === catName && (p.featuredImage || (p.media && p.media.length > 0)));
+    if (product) return product.featuredImage || product.media[0];
+    return 'https://via.placeholder.com/400x600?text=' + encodeURIComponent(catName);
+  };
+
+  const getCategoryCount = (catName) => {
+    return allProducts.filter(p => p.category === catName && p.status === 'Active').length;
+  };
+
+  // ========= RENDER =========
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', color: '#888' }}>
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* 1. HERO SECTION */}
-      <header className="hero-split">
-        <div className="hero-content">
-          <span className="overline">Est. 2024 • Jaipur, India</span>
-          <h1 className="hero-title">Tribal Art,<br />Reimagined.</h1>
-          <p className="hero-desc">
-            Experience a collection that is culturally rooted, refined, and consciously crafted.
+      {/* ============ 1. ANNOUNCEMENT BAR ============ */}
+      <div className="announce-bar">
+        <div className="announce-track">
+          <span>✨ Additional 5% OFF on Prepaid Orders</span>
+          <span className="announce-sep">|</span>
+          <span>🚚 Free Shipping on Orders Above ₹2,999</span>
+          <span className="announce-sep">|</span>
+          <span>📦 Dispatch Within 72 Hours</span>
+        </div>
+      </div>
+
+      {/* ============ 2. HERO SLIDER ============ */}
+      <section className="hero-slider">
+        {heroSlides.map((slide, index) => (
+          <div
+            key={index}
+            className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
+            style={{ backgroundImage: `url(${slide.image})` }}
+          >
+            <div className="hero-overlay" />
+            <div className={`hero-content hero-${slide.align}`}>
+              <span className="hero-subtitle">{slide.subtitle}</span>
+              <h1 className="hero-heading">{slide.title}</h1>
+              <Link href={slide.link} className="hero-cta">{slide.cta}</Link>
+            </div>
+          </div>
+        ))}
+
+        {heroSlides.length > 1 && (
+          <>
+            <div className="hero-dots">
+              {heroSlides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`hero-dot ${index === currentSlide ? 'active' : ''}`}
+                  onClick={() => goToSlide(index)}
+                />
+              ))}
+            </div>
+            <button className="hero-arrow hero-arrow-left" onClick={() => goToSlide((currentSlide - 1 + heroSlides.length) % heroSlides.length)}>‹</button>
+            <button className="hero-arrow hero-arrow-right" onClick={() => goToSlide((currentSlide + 1) % heroSlides.length)}>›</button>
+          </>
+        )}
+      </section>
+
+      {/* ============ 3. NEW ARRIVALS (from Firestore tags) ============ */}
+      {newArrivals.length > 0 && (
+        <section className="section-products">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">New Arrivals</h2>
+              <Link href="/shop?cat=new-arrival" className="section-link">Shop All →</Link>
+            </div>
+            <div className="products-grid">
+              {newArrivals.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============ 4. BESTSELLERS (from Firestore tags) ============ */}
+      {bestsellers.length > 0 && (
+        <section className="section-products section-alt">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">Bestsellers</h2>
+              <Link href="/shop?cat=bestseller" className="section-link">Shop All →</Link>
+            </div>
+            <div className="products-grid">
+              {bestsellers.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============ 5. FEATURED (from Firestore tags) ============ */}
+      {featuredProducts.length > 0 && (
+        <section className="section-products">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">Featured</h2>
+              <Link href="/shop?cat=featured" className="section-link">Shop All →</Link>
+            </div>
+            <div className="products-grid">
+              {featuredProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============ FALLBACK: ALL PRODUCTS if no tags exist ============ */}
+      {newArrivals.length === 0 && bestsellers.length === 0 && featuredProducts.length === 0 && allProducts.length > 0 && (
+        <section className="section-products">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">Our Products</h2>
+              <Link href="/shop" className="section-link">Shop All →</Link>
+            </div>
+            <div className="products-grid">
+              {allProducts.filter(p => p.status === 'Active').slice(0, 8).map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============ 6. SHOP BY CATEGORY (Dynamic from Firestore) ============ */}
+      {categories.length > 0 && (
+        <section className="section-category">
+          <div className="container">
+            <h2 className="section-title-center">Shop By Category</h2>
+            <div className="cat-grid-cards">
+              {categories.map((cat) => (
+                <Link href={`/shop?cat=${encodeURIComponent(cat.name)}`} key={cat.id} className="cat-card">
+                  <div className="cat-card-img">
+                    <img src={getCategoryImage(cat.name)} alt={cat.name} />
+                    <div className="cat-card-overlay" />
+                  </div>
+                  <div className="cat-card-info">
+                    <h3>{cat.name}</h3>
+                    <span>{getCategoryCount(cat.name)} Items</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============ 7. ABOUT US ============ */}
+      <section className="section-about">
+        <div className="about-image-side">
+          <img src="/img14.jpg" alt="Our Story" />
+        </div>
+        <div className="about-text-side">
+          <span className="about-label">About Us</span>
+          <h2 className="about-heading">A Story From The Roots</h2>
+          <p>
+            We know some things are special when they tell a story, something that comes from the roots of a culture creating a dialect between the user and provider.
           </p>
-          <div>
-            <Link href="/shop" className="btn-editorial">Explore Collections</Link>
-          </div>
-        </div>
-        <div className="hero-visual">
-          <img
-            src="img14.jpg"
-            alt="Tribal Hero"
-            className="hero-img"
-          />
-        </div>
-      </header>
-
-      {/* 2. CATEGORIES */}
-      <section className="category-section">
-        <div className="container">
-          <h2 style={{ textAlign: 'center', fontFamily: '"Playfair Display", serif', fontSize: '2rem', marginBottom: '50px' }}>
-            Shop By Category
-          </h2>
-
-          <div className="cat-grid">
-            {[
-              { name: 'Clearance', img: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?w=400', link: '/shop?cat=Clearance' },
-              { name: 'Anarkali', img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400', link: '/shop?cat=Anarkali' },
-              { name: 'Dress', img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400', link: '/shop?cat=Dress' },
-              { name: 'Saree', img: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=400', link: '/shop?cat=Saree' },
-              { name: 'Gharara', img: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=400', link: '/shop?cat=Gharara' },
-              { name: 'Menswear', img: 'https://images.unsplash.com/photo-1586227740560-8cf2732c1531?w=400', link: '/shop?cat=Menswear' }
-            ].map((item) => (
-              <Link href={item.link} key={item.name} className="cat-item">
-                <div className="cat-circle">
-                  <img src={item.img} alt={item.name} />
-                </div>
-                <span className="cat-name">{item.name}</span>
-              </Link>
-            ))}
-          </div>
+          <p>
+            Costerbox proudly represents this vernacular story from the great state of Rajasthan which talks about the clothes that are made by the experienced hand of local craftsmanship passed down through generations, their great knowledge of sustainable fabric and hand-worked details that outline beautiful minimalistic design.
+          </p>
+          <Link href="/about" className="about-cta">Read More</Link>
         </div>
       </section>
 
-      {/* 3. NEW ARRIVALS */}
-      <section id="products" className="products-section">
-        <div className="container">
-          <h2 style={{ textAlign: 'center', fontFamily: '"Playfair Display", serif', fontSize: '2rem', marginBottom: '50px' }}>
-            New Arrivals
-          </h2>
+      {/* ============ 8. FEATURED IN ============ */}
+      <section className="section-featured">
+        <h2 className="section-title-center" style={{ fontSize: '1.3rem', marginBottom: '40px' }}>Featured In</h2>
+        <div className="featured-logos">
+          <div className="featured-logo">Vogue</div>
+          <div className="featured-logo">Elle</div>
+          <div className="featured-logo">Harper's Bazaar</div>
+          <div className="featured-logo">WedMeGood</div>
+          <div className="featured-logo">Khush Magazine</div>
+        </div>
+      </section>
 
-          <div className="prod-grid">
-            {[
-              { name: 'Yalina Anarkali Set', price: '₹16,850', img: 'https://images.unsplash.com/photo-1583391733958-e026b1346338?w=800' },
-              { name: 'Nayab Anarkali Set', price: '₹18,500', img: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800' },
-              { name: 'Bindiya Dress', price: '₹12,990', img: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800' },
-              { name: 'Gulshan Sharara', price: '₹17,500', img: 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=800' }
-            ].map((p, i) => (
-              <div key={i} className="prod-card">
-                <div className="prod-image-box">
-                  <img src={p.img} alt={p.name} />
-                  {i === 0 && <span className="tag-new">New</span>}
-                </div>
-                <div className="prod-details">
-                  <h3 className="prod-title">{p.name}</h3>
-                  <p className="prod-price">{p.price}</p>
-                </div>
+      {/* ============ 9. TESTIMONIALS ============ */}
+      <section className="section-testimonials">
+        <div className="container">
+          <span className="testi-overline">From The People</span>
+          <div className="testi-slider">
+            {testimonials.map((t, i) => (
+              <div key={i} className={`testi-item ${i === currentTestimonial ? 'active' : ''}`}>
+                <p className="testi-text">"{t.text}"</p>
+                <h5 className="testi-author">— {t.author} ({t.location})</h5>
               </div>
             ))}
           </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <Link href="/shop" className="btn-outline">View All Products</Link>
+          <div className="testi-dots">
+            {testimonials.map((_, i) => (
+              <button
+                key={i}
+                className={`testi-dot ${i === currentTestimonial ? 'active' : ''}`}
+                onClick={() => setCurrentTestimonial(i)}
+              />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 4. ABOUT US */}
-      <section className="about-split">
-        <div className="about-text">
-          <span className="overline">About Us</span>
-          <h2 className="hero-title" style={{ fontSize: '2.5rem' }}>A Story From The Roots</h2>
-          <p className="hero-desc">
-            We know some things are special when they tell a story, something that comes from the roots of a culture creating a dialect between the user and provider.
-          </p>
-          <p className="hero-desc">
-            Costerbox proudly represents this vernacular story from the great state of Rajasthan which talks about the clothes that are made by the experienced hand of local craftsmanship.
-          </p>
-          <Link href="/about" style={{ textDecoration: 'underline', color: '#1a1a1a', fontSize: '14px', fontWeight: 'bold' }}>Read More</Link>
-        </div>
-        <div className="about-image">
-          <img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1887&auto=format&fit=crop" alt="Our Story" />
-        </div>
-      </section>
-
-      {/* 5. TESTIMONIALS */}
-      <section style={{ padding: '100px 0', background: '#1a1a1a', color: '#fff', textAlign: 'center' }}>
-        <div className="container" style={{ maxWidth: '800px', margin: '0 auto', padding: '0 20px' }}>
-          <span className="overline" style={{ opacity: 0.6 }}>From The People</span>
-          <div style={{ marginTop: '40px' }}>
-            <p style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.4rem', fontStyle: 'italic', marginBottom: '20px', lineHeight: '1.6' }}>
-              "Thanks team, I have received the order. For sure. I am definitely going to recommend you guys for your quick service."
-            </p>
-            <h5 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>— Aanisah (Spain)</h5>
-          </div>
+      {/* ============ 10. NEWSLETTER ============ */}
+      <section className="section-newsletter">
+        <div className="container">
+          <h3 className="nl-heading">Subscribe to Offers & Newsletters</h3>
+          <p className="nl-text">Be the first to know about new collections, exclusive offers, and more.</p>
+          <form className="nl-form" onSubmit={(e) => e.preventDefault()}>
+            <input type="email" placeholder="Enter your email address" className="nl-input" />
+            <button type="submit" className="nl-btn">Subscribe</button>
+          </form>
+          <p className="nl-disclaimer">*By completing this form you're signing up to receive our emails and can unsubscribe at any time.</p>
         </div>
       </section>
     </>

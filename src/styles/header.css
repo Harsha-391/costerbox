@@ -46,7 +46,6 @@
 .icon-link {
     font-size: 18px;
     color: #333;
-    /* Fallback */
     color: var(--text-main, #333);
     cursor: pointer;
     transition: 0.3s;
@@ -57,13 +56,103 @@
     background: none;
     border: none;
     padding: 0;
+    font-family: inherit;
 }
 
 .icon-link:hover {
     color: #666;
-    /* Fallback */
     color: var(--brand-beige, #666);
     transform: translateY(-2px);
+}
+
+/* --- PRODUCTS DROPDOWN --- */
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-trigger {
+    font-size: 14px !important;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.chevron {
+    transition: transform 0.3s ease;
+}
+
+.chevron.open {
+    transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1px solid #eee;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    z-index: 100;
+    animation: dropIn 0.2s ease;
+}
+
+@keyframes dropIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.nav-dropdown-item {
+    display: block;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+}
+
+.nav-dropdown-item:hover {
+    background: #f8f6f3;
+    color: #1a1a1a;
+    padding-left: 24px;
+}
+
+.nav-dropdown-divider {
+    height: 1px;
+    background: #eee;
+    margin: 0;
+}
+
+/* Mobile Section Title & Sublinks */
+.mobile-section-title {
+    font-weight: 700 !important;
+    color: #1a1a1a !important;
+    font-size: 12px !important;
+    letter-spacing: 2px !important;
+    border-bottom: none !important;
+    padding-bottom: 5px !important;
+    margin-top: 5px !important;
+}
+
+.mobile-sublink {
+    padding-left: 35px !important;
+    font-size: 13px !important;
+    color: #666 !important;
+    letter-spacing: 0.5px !important;
+}
+
+.mobile-sublink:hover {
+    color: #1a1a1a !important;
+    background: #f8f6f3 !important;
 }
 
 /* --- SEARCH BAR DESKTOP --- */

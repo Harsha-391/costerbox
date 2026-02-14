@@ -1,25 +1,55 @@
 /* src/components/Header.js */
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { Search, ShoppingBag, User, Menu, X, Package, LogOut } from 'lucide-react';
-import '../styles/header.css'; 
+import { db } from '../lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { Search, ShoppingBag, User, Menu, X, Package, LogOut, ChevronDown } from 'lucide-react';
+import '../styles/header.css';
 
 export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuth();
-    
-    // State for Mobile Menu & Search
+
+    // State for Mobile Menu, Search & Products Dropdown
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
+    const [productsOpen, setProductsOpen] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const dropdownRef = useRef(null);
 
     // Hide Header on Admin/Secured pages (except Login)
     if (pathname.startsWith('/secured') && pathname !== '/secured/login') {
         return null;
     }
+
+    // Fetch categories from Firestore
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const catSnap = await getDocs(collection(db, 'categories'));
+                const cats = catSnap.docs.map(d => d.data().name).filter(Boolean);
+                setCategories(cats);
+            } catch (err) {
+                console.error('Error fetching categories:', err);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setProductsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleLogout = async () => {
         await logout();
@@ -30,7 +60,7 @@ export default function Header() {
     return (
         <nav className="nav-wrapper">
             <div className="nav-bar">
-                
+
                 {/* 1. MOBILE TOGGLE (Left) */}
                 <div className="mobile-toggle" onClick={() => setMobileMenuOpen(true)}>
                     <Menu size={22} />
@@ -38,14 +68,45 @@ export default function Header() {
 
                 {/* 2. LOGO (Center) */}
                 <Link href="/" className="brand-logo">
-                    {/* Ensure logo.png exists in /public folder */}
                     <img src="/logo.png" alt="CosterBox" className="logo-img" />
                 </Link>
 
                 {/* 3. DESKTOP ICONS (Right) */}
                 <div className="desktop-icons">
+
+                    {/* Products Dropdown */}
+                    <div className="nav-dropdown" ref={dropdownRef}>
+                        <button
+                            className="icon-link nav-dropdown-trigger"
+                            onClick={() => setProductsOpen(!productsOpen)}
+                        >
+                            Products <ChevronDown size={14} className={`chevron ${productsOpen ? 'open' : ''}`} />
+                        </button>
+
+                        {productsOpen && (
+                            <div className="nav-dropdown-menu">
+                                <Link href="/shop" className="nav-dropdown-item" onClick={() => setProductsOpen(false)}>
+                                    All Products
+                                </Link>
+                                {categories.length > 0 && (
+                                    <div className="nav-dropdown-divider" />
+                                )}
+                                {categories.map((cat, i) => (
+                                    <Link
+                                        href={`/shop?cat=${encodeURIComponent(cat)}`}
+                                        key={i}
+                                        className="nav-dropdown-item"
+                                        onClick={() => setProductsOpen(false)}
+                                    >
+                                        {cat}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <Link href="/shop" className="icon-link">Archive</Link>
-                    
+
                     {/* Search Bar Logic */}
                     <div className={`search-container ${searchOpen ? 'active' : ''}`}>
                         <input type="text" className="search-input" placeholder="Search..." />
@@ -64,10 +125,10 @@ export default function Header() {
                             <Link href="/orders" className="icon-link" title="My Orders">
                                 <Package size={20} />
                             </Link>
-                            <button 
-                                onClick={handleLogout} 
-                                className="icon-link" 
-                                title="Logout" 
+                            <button
+                                onClick={handleLogout}
+                                className="icon-link"
+                                title="Logout"
                             >
                                 <LogOut size={20} />
                             </button>
@@ -96,16 +157,31 @@ export default function Header() {
                     <span className="menu-title">Menu</span>
                     <X className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)} />
                 </div>
-                
+
                 <Link href="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+
+                {/* Mobile Products Section */}
+                <div className="mobile-link mobile-section-title">Products</div>
+                <Link href="/shop" className="mobile-link mobile-sublink" onClick={() => setMobileMenuOpen(false)}>All Products</Link>
+                {categories.map((cat, i) => (
+                    <Link
+                        href={`/shop?cat=${encodeURIComponent(cat)}`}
+                        key={i}
+                        className="mobile-link mobile-sublink"
+                        onClick={() => setMobileMenuOpen(false)}
+                    >
+                        {cat}
+                    </Link>
+                ))}
+
                 <Link href="/shop" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Archive</Link>
                 <Link href="/cart" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Cart</Link>
-                
+
                 {user ? (
                     <>
                         <Link href="/orders" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
-                        <button 
-                            className="mobile-link mobile-link-btn" 
+                        <button
+                            className="mobile-link mobile-link-btn"
                             onClick={handleLogout}
                         >
                             Logout
@@ -117,8 +193,8 @@ export default function Header() {
             </div>
 
             {/* OVERLAY */}
-            <div 
-                className={`mobile-overlay ${mobileMenuOpen ? 'open' : ''}`} 
+            <div
+                className={`mobile-overlay ${mobileMenuOpen ? 'open' : ''}`}
                 onClick={() => setMobileMenuOpen(false)}
             />
         </nav>
