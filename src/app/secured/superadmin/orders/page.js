@@ -49,7 +49,8 @@ export default function AdminOrdersPage() {
 
     const handleShip = async () => {
         if (!editingOrder) return;
-        if (!window.confirm(`Ship Order #${editingOrder.orderId}? This will create a shipment in Shiprocket.`)) return;
+        const displayId = editingOrder.orderId || editingOrder.id;
+        if (!window.confirm(`Ship Order #${displayId}? This will create a shipment in Shiprocket.`)) return;
 
         try {
             const res = await fetch('/api/shiprocket/create-order', {
@@ -136,7 +137,7 @@ export default function AdminOrdersPage() {
                                         {formatDate(order.createdAt).split(',')[0]}
                                     </div>
                                     <div style={{ fontFamily: 'monospace', color: '#888', marginTop: '4px' }}>
-                                        #{order.orderId ? order.orderId.slice(-6).toUpperCase() : order.id.slice(0, 6)}
+                                        #{order.orderId ? order.orderId : order.id ? order.id.slice(0, 6) : '---'}
                                     </div>
                                 </td>
                                 <td style={tdStyle}>
@@ -224,8 +225,46 @@ export default function AdminOrdersPage() {
                 <div style={modalOverlay}>
                     <div style={modalBox}>
                         <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
-                            Update Order #{editingOrder.orderId?.slice(-6)}
+                            Update Order #{editingOrder.orderId ? editingOrder.orderId.slice(-6) : editingOrder.id.slice(-6)}
                         </h2>
+
+                        {/* --- SHIPROCKET SECTION (Primary Action) --- */}
+                        {editingOrder.status !== 'shipped' && editingOrder.status !== 'delivered' && (
+                            <div style={{ padding: '16px', background: '#f5f3ff', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ddd6fe' }}>
+                                <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#5b21b6', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Truck size={18} /> Automated Shipping
+                                </h3>
+                                <p style={{ fontSize: '13px', color: '#6d28d9', marginBottom: '12px' }}>
+                                    Click below to automatically create a shipment, generate AWB, and notify the customer via Shiprocket.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleShip}
+                                    style={{
+                                        width: '100%', padding: '10px', color: '#fff', background: '#7c3aed',
+                                        border: 'none', borderRadius: '6px', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    <Truck size={18} /> Ship via Shiprocket
+                                </button>
+                            </div>
+                        )}
+
+                        {/* --- SHIPMENT INFO (If Shipped) --- */}
+                        {editingOrder.shiprocketOrderId && (
+                            <div style={{ padding: '12px', background: '#ecfccb', marginBottom: '20px', borderRadius: '8px', border: '1px solid #d9f99d' }}>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#365314', fontWeight: '600' }}>
+                                    ✅ Shiprocket Order Linked: #{editingOrder.shiprocketOrderId}
+                                </p>
+                                {editingOrder.awbCode && (
+                                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#365314' }}>
+                                        AWB: {editingOrder.awbCode}
+                                    </p>
+                                )}
+                            </div>
+                        )}
 
                         <form onSubmit={handleUpdateStatus}>
                             <div style={{ marginBottom: '16px' }}>
@@ -238,29 +277,36 @@ export default function AdminOrdersPage() {
                                 </select>
                             </div>
 
-                            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
-                                <h3 style={{ fontWeight: '600', color: '#111827', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Truck size={18} /> Tracking Details
-                                </h3>
-                                <input
-                                    name="courier"
-                                    placeholder="Courier Name (e.g. BlueDart)"
-                                    defaultValue={editingOrder.tracking?.courier}
-                                    style={{ ...inputStyle, marginBottom: '8px' }}
-                                />
-                                <input
-                                    name="trackingId"
-                                    placeholder="Tracking Number / AWB"
-                                    defaultValue={editingOrder.tracking?.id}
-                                    style={{ ...inputStyle, marginBottom: '8px' }}
-                                />
-                                <input
-                                    name="trackingLink"
-                                    placeholder="Tracking URL (http://...)"
-                                    defaultValue={editingOrder.tracking?.link}
-                                    style={{ ...inputStyle, marginBottom: '8px' }}
-                                />
-                            </div>
+                            {/* MANUAL TRACKING TOGGLE */}
+                            <details style={{ marginTop: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '16px', cursor: 'pointer' }}>
+                                <summary style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '12px' }}>
+                                    Is this a Manual / Offline Shipment?
+                                </summary>
+                                <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb', marginTop: '8px' }}>
+                                    <p style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
+                                        Only fill these details if you shipped this order <strong>outside</strong> of Shiprocket (e.g. manually via Post Office or local courier).
+                                    </p>
+                                    <input
+                                        name="courier"
+                                        placeholder="Courier Name (e.g. BlueDart)"
+                                        defaultValue={editingOrder.tracking?.courier}
+                                        style={{ ...inputStyle, marginBottom: '8px' }}
+                                    />
+                                    <input
+                                        name="trackingId"
+                                        placeholder="Tracking Number / AWB"
+                                        defaultValue={editingOrder.tracking?.id}
+                                        style={{ ...inputStyle, marginBottom: '8px' }}
+                                    />
+                                    <input
+                                        name="trackingLink"
+                                        placeholder="Tracking URL (http://...)"
+                                        defaultValue={editingOrder.tracking?.link}
+                                        style={{ ...inputStyle, marginBottom: '8px' }}
+                                    />
+                                </div>
+                            </details>
+
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                                 <button
@@ -270,16 +316,6 @@ export default function AdminOrdersPage() {
                                 >
                                     Cancel
                                 </button>
-
-                                {editingOrder.status !== 'shipped' && editingOrder.status !== 'delivered' && (
-                                    <button
-                                        type="button"
-                                        onClick={handleShip}
-                                        style={{ padding: '8px 16px', color: '#fff', background: '#7c3aed', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                    >
-                                        <Truck size={16} /> Ship via Shiprocket
-                                    </button>
-                                )}
 
                                 <button
                                     type="submit"

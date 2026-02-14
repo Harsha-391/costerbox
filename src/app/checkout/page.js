@@ -90,6 +90,7 @@ function CheckoutContent() {
                                 id: product?.id || "unknown_product",
                                 name: product?.name || product?.title || "Unnamed Product",
                                 price: rawPrice, // Store Full Price
+                                costPerItem: product?.costPerItem || 0, // Store Cost Price for Profit Calc
                                 image: product?.featuredImage || product?.media?.[0] || "/placeholder.jpg",
                                 isCustomizable: isCustom
                             },
@@ -110,13 +111,29 @@ function CheckoutContent() {
                                 totalAmount: rawPrice,
                                 type: isCustom ? "PARTIAL_ADVANCE" : "FULL_PAYMENT"
                             },
+                            // Generate a readable Order ID
+                            orderId: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
                             // Custom orders need artisan acceptance
                             status: isCustom ? "pending_artisan_acceptance" : "paid",
                             isCustomOrder: isCustom,
                             createdAt: serverTimestamp()
                         };
 
-                        await addDoc(collection(db, "orders"), safePayload);
+                        const docRef = await addDoc(collection(db, "orders"), safePayload);
+
+                        // AUTOMATICALLY CREATE SHIPROCKET ORDER FOR STANDARD ORDERS
+                        if (!isCustom) {
+                            fetch('/api/shiprocket/create-order', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: docRef.id })
+                            }).then(res => res.json())
+                                .then(data => {
+                                    if (!data.success) console.error("Auto-shipping failed:", data.error);
+                                    else console.log("Auto-shipped:", data.data.shipment_id);
+                                })
+                                .catch(err => console.error("Auto-shipping error:", err));
+                        }
 
                         alert(isCustom
                             ? "Custom Order Placed! Notification sent to nearby artisans."

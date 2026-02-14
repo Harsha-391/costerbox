@@ -2,9 +2,10 @@
 
 /* --- 1. LAYOUT CONTAINER --- */
 .nav-wrapper {
-    background-color: #ffffff; /* Fallback if var doesn't exist */
+    background-color: #ffffff;
+    /* Fallback if var doesn't exist */
     background-color: var(--brand-white, #ffffff);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     position: relative;
     z-index: 1000;
     height: 100px;
@@ -39,12 +40,13 @@
 .desktop-icons {
     display: flex;
     align-items: center;
-    gap: 30px; 
+    gap: 30px;
 }
 
 .icon-link {
-    font-size: 18px; 
-    color: #333; /* Fallback */
+    font-size: 18px;
+    color: #333;
+    /* Fallback */
     color: var(--text-main, #333);
     cursor: pointer;
     transition: 0.3s;
@@ -58,7 +60,8 @@
 }
 
 .icon-link:hover {
-    color: #666; /* Fallback */
+    color: #666;
+    /* Fallback */
     color: var(--brand-beige, #666);
     transform: translateY(-2px);
 }
@@ -70,7 +73,9 @@
     position: relative;
 }
 
-.search-trigger { z-index: 2; }
+.search-trigger {
+    z-index: 2;
+}
 
 .search-input {
     width: 0;
@@ -97,11 +102,25 @@
 }
 
 /* --- HIDE MOBILE ELEMENTS ON DESKTOP --- */
-.mobile-toggle { display: none; }
-.mobile-right-section { display: none; }
-.mobile-menu-expansion { display: none; }
-.mobile-overlay { display: none; }
-.mobile-search-bar { display: none; }
+.mobile-toggle {
+    display: none;
+}
+
+.mobile-right-section {
+    display: none;
+}
+
+.mobile-menu-expansion {
+    display: none;
+}
+
+.mobile-overlay {
+    display: none;
+}
+
+.mobile-search-bar {
+    display: none;
+}
 
 /* =========================================
    MOBILE RESPONSIVE STYLES (Max Width 900px)
@@ -109,45 +128,53 @@
 @media (max-width: 900px) {
 
     .nav-wrapper {
-        height: 70px; 
+        height: 70px;
     }
 
     .nav-bar {
         padding: 0 20px;
-        display: flex; 
+        display: flex;
         justify-content: space-between;
         align-items: center;
         width: 100%;
     }
 
     /* Hide Desktop Icons */
-    .desktop-icons { display: none !important; }
+    .desktop-icons {
+        display: none !important;
+    }
 
     /* 1. Hamburger (Left) */
-    .mobile-toggle { 
-        display: block; 
+    .mobile-toggle {
+        display: block !important;
         font-size: 22px;
         cursor: pointer;
-        width: 40px; 
-        order: 1; 
+        width: 40px;
+        order: 1;
     }
 
     /* 2. Logo (Center) */
     .brand-logo {
-        order: 2; 
-        flex: 1; 
-        justify-content: center; 
+        order: 2;
+        flex: 1;
+        justify-content: center;
     }
-    .logo-img { height: 40px; }
+
+    .logo-img {
+        height: 40px;
+    }
 
     /* 3. Mobile Right Section (Search + Cart) */
     .mobile-right-section {
-        display: flex;
+        display: flex !important;
         align-items: center;
-        gap: 15px; /* Space between Search and Cart icons */
+        gap: 15px;
+        /* Space between Search and Cart icons */
         order: 3;
-        width: auto; /* Allow auto width to fit contents */
-        min-width: 40px; /* Minimum width balance */
+        width: auto;
+        /* Allow auto width to fit contents */
+        min-width: 40px;
+        /* Minimum width balance */
         justify-content: flex-end;
     }
 
@@ -167,14 +194,15 @@
     .mobile-search-bar {
         display: block;
         position: absolute;
-        top: 100%; /* Sits just below the header */
+        top: 100%;
+        /* Sits just below the header */
         left: 0;
         width: 100%;
         background-color: #ffffff;
         padding: 15px 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         z-index: 999;
-        
+
         /* Animation properties */
         opacity: 0;
         visibility: hidden;
@@ -222,13 +250,15 @@
         height: 100vh;
         width: 280px;
         background-color: #ffffff;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         z-index: 2000;
         transform: translateX(-100%);
         transition: transform 0.3s ease-in-out;
     }
 
-    .mobile-menu-expansion.open { transform: translateX(0); }
+    .mobile-menu-expansion.open {
+        transform: translateX(0);
+    }
 
     .mobile-menu-header {
         display: flex;
@@ -239,8 +269,17 @@
         background-color: #fafafa;
     }
 
-    .menu-title { font-weight: 700; text-transform: uppercase; font-size: 14px; }
-    .mobile-menu-close { font-size: 20px; padding: 5px; cursor: pointer; }
+    .menu-title {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 14px;
+    }
+
+    .mobile-menu-close {
+        font-size: 20px;
+        padding: 5px;
+        cursor: pointer;
+    }
 
     .mobile-link {
         padding: 15px 20px;
@@ -251,7 +290,7 @@
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
+
     .mobile-link-btn {
         text-align: left;
         background: none;
@@ -269,12 +308,15 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0,0,0,0.5);
+        background-color: rgba(0, 0, 0, 0.5);
         z-index: 1500;
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s ease;
     }
 
-    .mobile-overlay.open { opacity: 1; visibility: visible; }
+    .mobile-overlay.open {
+        opacity: 1;
+        visibility: visible;
+    }
 }

@@ -22,12 +22,12 @@ export const AuthProvider = ({ children }) => {
                 // 0. HARDCODED SUPER ADMINS (For Development/Rescue)
                 // Add your Google Account email here to force Admin access
                 const SUPER_ADMIN_EMAILS = [
-                    "sneeze.media@gmail.com",
-                    "admin@costerbox.in"
+                    "coasterbox@gmail.com",
+                    "costerboxshop@gmail.com"
                 ];
 
                 try {
-                    // 1. Check Hardcoded List First
+                    // 1. Check Hardcoded List First (ABSOLUTE AUTHORITY FOR SUPERADMIN)
                     if (SUPER_ADMIN_EMAILS.includes(firebaseUser.email)) {
                         console.log("User authorized via Hardcoded List:", firebaseUser.email);
                         setRole('superadmin');
@@ -37,10 +37,18 @@ export const AuthProvider = ({ children }) => {
                         const userSnap = await getDoc(userRef);
 
                         if (userSnap.exists()) {
-                            setRole(userSnap.data().role); // 'admin', 'artisan', or 'user'
+                            const dbRole = userSnap.data().role;
+
+                            // CRITICAL SECURITY FIX:
+                            // Even if DB says "superadmin", if they are NOT in the whitelist, downgrade them.
+                            if (dbRole === 'superadmin') {
+                                console.warn(`Security: User ${firebaseUser.email} has 'superadmin' in DB but is not whitelisted. Downgrading to 'user'.`);
+                                setRole('user');
+                            } else {
+                                setRole(dbRole); // Allow 'artisan' or 'user' roles to pass through
+                            }
                         } else {
                             console.warn("User document not found. Defaulting to 'user' role.");
-                            // Default to 'user' so they are logged in, just not admin
                             setRole('user');
                         }
                     }

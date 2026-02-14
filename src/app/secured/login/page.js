@@ -26,8 +26,7 @@ export default function LoginPage() {
 
       // HARDCODED SUPER ADMINS (Sync with AuthContext)
       const SUPER_ADMIN_EMAILS = [
-        "sneeze.media@gmail.com",
-        "admin@costerbox.in"
+        "coasterbox@gmail.com"
       ];
       const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(user.email);
 

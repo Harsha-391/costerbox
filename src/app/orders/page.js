@@ -102,7 +102,7 @@ export default function MyOrdersPage() {
                                 {/* HEADER */}
                                 <div className="order-header">
                                     <div className="order-id">
-                                        Order #<span>{order.orderId ? order.orderId.slice(-6).toUpperCase() : '---'}</span>
+                                        Order #<span>{order.orderId ? order.orderId : order.id.slice(0, 8).toUpperCase()}</span>
                                     </div>
                                     <div className="order-date">
                                         {formatDate(order.createdAt)}

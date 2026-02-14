@@ -11,7 +11,8 @@ export default function AdminDashboard() {
         totalSales: 0,
         totalOrders: 0,
         activeProducts: 0,
-        activeArtisans: 0
+        activeArtisans: 0,
+        totalProfit: 0
     });
     const [recentOrders, setRecentOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,34 +20,64 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. ORDERS Stats & Recent
-                const ordersRef = collection(db, "orders");
-                const qOrders = query(ordersRef, orderBy("createdAt", "desc"));
-                const orderSnap = await getDocs(qOrders);
+                // 1. Fetch Orders & Products in Parallel
+                const [orderSnap, productSnap, artisanSnap] = await Promise.all([
+                    getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc"))),
+                    getDocs(collection(db, "products")),
+                    getDocs(query(collection(db, "users"), where("role", "==", "artisan")))
+                ]);
 
-                let sales = 0;
+                // Create Product Cost Map (ID -> Cost)
+                const productCosts = {};
+                productSnap.docs.forEach(doc => {
+                    const d = doc.data();
+                    productCosts[doc.id] = Number(d.costPerItem) || 0;
+                });
+
+                let sales = 0; // Cash Collected
+                let totalRevenue = 0; // Full Order Value (Projected)
+                let totalCost = 0; // Cost of Goods
+
                 const orders = orderSnap.docs.map(doc => {
                     const data = doc.data();
-                    // Add to sales if paid amount exists
+
+                    // Sales (Cash Collected)
                     if (data.payment?.paidAmount) {
                         sales += Number(data.payment.paidAmount);
                     } else if (data.totalAmount && ['paid', 'shipped', 'delivered'].includes(data.status)) {
-                        // Legacy check
-                        sales += Number(data.totalAmount);
+                        sales += Number(data.totalAmount); // Legacy/Full
                     }
+
+                    // Revenue (Full Value) & Cost (For Profit)
+                    // Only count for valid orders (not cancelled)
+                    if (!['cancelled', 'returned'].includes(data.status)) {
+                        const orderValue = Number(data.payment?.totalAmount || data.totalAmount || 0);
+                        totalRevenue += orderValue;
+
+                        // Cost Calculation
+                        let itemCost = 0;
+                        // Use cost snapshot in order if available (Historical accuracy)
+                        if (data.product?.costPerItem) {
+                            itemCost = Number(data.product.costPerItem);
+                        }
+                        // Fallback to current product cost
+                        else if (data.product?.id && productCosts[data.product.id]) {
+                            itemCost = productCosts[data.product.id];
+                        }
+                        totalCost += itemCost;
+                    }
+
                     return { id: doc.id, ...data };
                 });
 
-                // 2. PRODUCTS Count
-                const productSnap = await getDocs(collection(db, "products"));
-                // 3. ARTISANS Count
-                const artisanSnap = await getDocs(query(collection(db, "users"), where("role", "==", "artisan")));
+                const profit = totalRevenue - totalCost;
 
                 setStats({
                     totalSales: sales,
                     totalOrders: orders.length,
                     activeProducts: productSnap.size,
-                    activeArtisans: artisanSnap.size
+                    activeArtisans: artisanSnap.size,
+                    totalProfit: profit
                 });
 
                 setRecentOrders(orders.slice(0, 5));
@@ -72,9 +103,9 @@ export default function AdminDashboard() {
 
     const statCards = [
         { label: 'Total Sales', value: formatCurrency(stats.totalSales), color: '#10b981', bg: '#d1fae5', icon: IndianRupee },
+        { label: 'Est. Profit', value: formatCurrency(stats.totalProfit), color: '#8b5cf6', bg: '#ede9fe', icon: TrendingUp },
         { label: 'Total Orders', value: stats.totalOrders, color: '#3b82f6', bg: '#dbeafe', icon: ShoppingBag },
         { label: 'Active Products', value: stats.activeProducts, color: '#f59e0b', bg: '#fef3c7', icon: Shirt },
-        { label: 'Artisans', value: stats.activeArtisans, color: '#8b5cf6', bg: '#ede9fe', icon: Users },
     ];
 
     return (
@@ -152,7 +183,7 @@ export default function AdminDashboard() {
                                 <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '10px', borderRadius: '8px' }}><Plus size={20} /></div>
                                 <span style={{ fontWeight: '500' }}>Add New Product</span>
                             </Link>
-                            <Link href="/secured/superadmin/manage-artisans" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '10px', color: '#333', textDecoration: 'none', transition: 'background 0.2s', background: '#fff' }}>
+                            <Link href="/secured/superadmin/team" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', border: '1px solid #e5e7eb', borderRadius: '10px', color: '#333', textDecoration: 'none', transition: 'background 0.2s', background: '#fff' }}>
                                 <div style={{ background: '#fce7f3', color: '#be185d', padding: '10px', borderRadius: '8px' }}><Users size={20} /></div>
                                 <span style={{ fontWeight: '500' }}>Register Artisan</span>
                             </Link>
