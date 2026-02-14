@@ -1,16 +1,15 @@
-/* src/app/shop/page.js */
+/* src/app/products/page.js */
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
-import ChatWindow from '../../components/ChatWindow';
 import Link from 'next/link';
-import { MessageCircle, ShoppingBag, X } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import '../../styles/shop.css';
 
-function ShopPageContent() {
+function ProductsPageContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const catFromUrl = searchParams.get('cat');
@@ -20,9 +19,6 @@ function ShopPageContent() {
     const [filter, setFilter] = useState(catFromUrl || 'All');
     const [loading, setLoading] = useState(true);
 
-    // Track which product is currently being discussed
-    const [activeChatProduct, setActiveChatProduct] = useState(null);
-
     // --- FETCH DATA ---
     useEffect(() => {
         const fetchData = async () => {
@@ -31,9 +27,9 @@ function ShopPageContent() {
                 setCategories(catSnap.docs.map(d => d.data().name).filter(Boolean));
 
                 const prodSnap = await getDocs(collection(db, 'products'));
-                // Archive shows ONLY customizable products
+                // Products page shows ONLY non-customizable (direct shipping) products
                 const allProds = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                setProducts(allProds.filter(p => p.isCustomizable === true));
+                setProducts(allProds.filter(p => !p.isCustomizable));
 
                 setLoading(false);
             } catch (error) {
@@ -49,44 +45,19 @@ function ShopPageContent() {
     }, [catFromUrl]);
 
     // --- FILTER LOGIC ---
-    // Support filtering by category name, region, or tags (like "bestseller", "new-arrival")
     const filteredProducts = filter === 'All'
         ? products
         : products.filter(p => {
-            // Match by category
             if (p.category === filter) return true;
-            // Match by region
             if (p.region === filter) return true;
-            // Match by tag (tags stored as array in Firestore)
             if (Array.isArray(p.tags) && p.tags.includes(filter.toLowerCase())) return true;
             return false;
         });
 
-    // --- HANDLER: OPEN CHAT ---
-    const handleOpenChat = (product) => {
-        if (!user) {
-            alert("Please login to customize this product.");
-            return;
-        }
-        setActiveChatProduct(product);
-    };
-
-    if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}>Loading Archive...</div>;
+    if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}>Loading Products...</div>;
 
     return (
         <>
-            {/* --- CHAT MODAL OVERLAY --- */}
-            {activeChatProduct && user && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: '16px' }}>
-                    <ChatWindow
-                        chatId={`inquiry_${user.uid}_${activeChatProduct.id}`}
-                        artisanId={activeChatProduct.artisanId}
-                        productName={activeChatProduct.name}
-                        onClose={() => setActiveChatProduct(null)}
-                    />
-                </div>
-            )}
-
             {/* MOBILE FILTERS */}
             <div className="mobile-filters">
                 <span
@@ -111,10 +82,9 @@ function ShopPageContent() {
                 {/* SIDEBAR */}
                 <aside className="sidebar">
                     <div className="filter-group">
-                        <h3 className="filter-title">Collections</h3>
+                        <h3 className="filter-title">Browse</h3>
                         <ul className="filter-list">
-                            <li className={filter === 'All' ? 'active' : ''} onClick={() => setFilter('All')}>All Archive</li>
-                            <li onClick={() => setFilter('New Arrivals')}>New Arrivals</li>
+                            <li className={filter === 'All' ? 'active' : ''} onClick={() => setFilter('All')}>All Products</li>
                         </ul>
                     </div>
 
@@ -137,20 +107,16 @@ function ShopPageContent() {
                 {/* MAIN CONTENT */}
                 <main className="main-gallery">
                     <div className="gallery-header">
-                        <h1>The Artisan Archive</h1>
-                        <p>Curated pieces from the heart of Rajasthan. Respecting the hands that create.</p>
+                        <h1>Products</h1>
+                        <p>Shop our curated collection. Direct shipping, no customization wait.</p>
                     </div>
 
                     <div className="products-grid">
                         {filteredProducts.map(product => (
                             <div key={product.id} className="product-card">
-
-                                {/* 2. WRAP IMAGE IN LINK */}
                                 <Link href={`/shop/${product.id}`} style={{ display: 'block', cursor: 'pointer' }}>
                                     <div className="img-box">
                                         {product.badge && <span className="badge">{product.badge}</span>}
-
-                                        {/* IMAGE LOGIC */}
                                         {(() => {
                                             let finalImage = product.featuredImage;
                                             if (!finalImage && product.media && product.media.length > 0) {
@@ -162,7 +128,7 @@ function ShopPageContent() {
                                             return (
                                                 <img
                                                     src={finalImage}
-                                                    alt={product.title || 'Product Image'}
+                                                    alt={product.title || product.name || 'Product'}
                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 />
                                             );
@@ -171,32 +137,25 @@ function ShopPageContent() {
                                 </Link>
 
                                 <div className="card-details">
-                                    <span className="p-region">{product.region}</span>
+                                    <span className="p-region">{product.category || product.region}</span>
 
-                                    {/* 3. WRAP TITLE IN LINK */}
                                     <Link href={`/shop/${product.id}`} style={{ textDecoration: 'none' }}>
                                         <h3 className="p-name">{product.name || product.title}</h3>
                                     </Link>
 
-                                    <span className="p-price">{product.price}</span>
+                                    <span className="p-price">
+                                        ₹{Number(product.price).toLocaleString('en-IN')}
+                                        {product.comparePrice && (
+                                            <span style={{ textDecoration: 'line-through', color: '#999', marginLeft: '8px', fontSize: '0.85rem' }}>
+                                                ₹{Number(product.comparePrice).toLocaleString('en-IN')}
+                                            </span>
+                                        )}
+                                    </span>
 
                                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                        {/* STANDARD ADD TO CART */}
                                         <button className="add-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                            <ShoppingBag size={16} /> Add
+                                            <ShoppingBag size={16} /> Add to Bag
                                         </button>
-
-                                        {/* CUSTOMIZATION BUTTON (Conditional) */}
-                                        {product.isCustomizable && (
-                                            <button
-                                                onClick={() => handleOpenChat(product)}
-                                                style={{ background: '#1a1a1a', color: '#fff', padding: '8px 12px', borderRadius: '4px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}
-                                                title="Chat with Artisan to Customize"
-                                            >
-                                                <MessageCircle size={16} />
-                                                Customize
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -205,8 +164,8 @@ function ShopPageContent() {
 
                     {filteredProducts.length === 0 && (
                         <div style={{ textAlign: 'center', marginTop: '50px', color: '#999' }}>
-                            <p>No artifacts found in this collection.</p>
-                            <button onClick={() => setFilter('All')} style={{ textDecoration: 'underline' }}>View All</button>
+                            <p>No products found in this category.</p>
+                            <button onClick={() => setFilter('All')} style={{ textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>View All</button>
                         </div>
                     )}
                 </main>
@@ -217,10 +176,10 @@ function ShopPageContent() {
 }
 
 // Suspense wrapper for useSearchParams
-export default function ShopPage() {
+export default function ProductsPage() {
     return (
-        <Suspense fallback={<div style={{ padding: '100px', textAlign: 'center' }}>Loading Archive...</div>}>
-            <ShopPageContent />
+        <Suspense fallback={<div style={{ padding: '100px', textAlign: 'center' }}>Loading Products...</div>}>
+            <ProductsPageContent />
         </Suspense>
     );
 }

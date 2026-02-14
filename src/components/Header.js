@@ -21,11 +21,6 @@ export default function Header() {
     const [categories, setCategories] = useState([]);
     const dropdownRef = useRef(null);
 
-    // Hide Header on Admin/Secured pages (except Login)
-    if (pathname.startsWith('/secured') && pathname !== '/secured/login') {
-        return null;
-    }
-
     // Fetch categories from Firestore
     useEffect(() => {
         const fetchCategories = async () => {
@@ -57,6 +52,11 @@ export default function Header() {
         setMobileMenuOpen(false);
     };
 
+    // Hide Header on Admin/Secured pages (except Login) — MUST be after all hooks
+    if (pathname.startsWith('/secured') && pathname !== '/secured/login') {
+        return null;
+    }
+
     return (
         <nav className="nav-wrapper">
             <div className="nav-bar">
@@ -85,7 +85,7 @@ export default function Header() {
 
                         {productsOpen && (
                             <div className="nav-dropdown-menu">
-                                <Link href="/shop" className="nav-dropdown-item" onClick={() => setProductsOpen(false)}>
+                                <Link href="/products" className="nav-dropdown-item" onClick={() => setProductsOpen(false)}>
                                     All Products
                                 </Link>
                                 {categories.length > 0 && (
@@ -93,7 +93,7 @@ export default function Header() {
                                 )}
                                 {categories.map((cat, i) => (
                                     <Link
-                                        href={`/shop?cat=${encodeURIComponent(cat)}`}
+                                        href={`/products?cat=${encodeURIComponent(cat)}`}
                                         key={i}
                                         className="nav-dropdown-item"
                                         onClick={() => setProductsOpen(false)}
@@ -162,10 +162,10 @@ export default function Header() {
 
                 {/* Mobile Products Section */}
                 <div className="mobile-link mobile-section-title">Products</div>
-                <Link href="/shop" className="mobile-link mobile-sublink" onClick={() => setMobileMenuOpen(false)}>All Products</Link>
+                <Link href="/products" className="mobile-link mobile-sublink" onClick={() => setMobileMenuOpen(false)}>All Products</Link>
                 {categories.map((cat, i) => (
                     <Link
-                        href={`/shop?cat=${encodeURIComponent(cat)}`}
+                        href={`/products?cat=${encodeURIComponent(cat)}`}
                         key={i}
                         className="mobile-link mobile-sublink"
                         onClick={() => setMobileMenuOpen(false)}

@@ -70,7 +70,7 @@ export default function HomePage() {
       subtitle: 'Est. 2024 • Jaipur, India',
       title: 'TRIBAL ART,\nREIMAGINED.',
       cta: 'Shop Now',
-      link: '/shop',
+      link: '/products',
       align: 'center'
     },
     {
@@ -78,7 +78,7 @@ export default function HomePage() {
       subtitle: 'Ready to Ship',
       title: 'DISPATCH WITHIN\n72 HOURS',
       cta: 'Shop Collection',
-      link: '/shop',
+      link: '/products',
       align: 'left'
     }
   ];
@@ -229,7 +229,7 @@ export default function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">New Arrivals</h2>
-              <Link href="/shop?cat=new-arrival" className="section-link">Shop All →</Link>
+              <Link href="/products?cat=new-arrival" className="section-link">Shop All →</Link>
             </div>
             <div className="products-grid">
               {newArrivals.map((p) => (
@@ -246,7 +246,7 @@ export default function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Bestsellers</h2>
-              <Link href="/shop?cat=bestseller" className="section-link">Shop All →</Link>
+              <Link href="/products?cat=bestseller" className="section-link">Shop All →</Link>
             </div>
             <div className="products-grid">
               {bestsellers.map((p) => (
@@ -263,7 +263,7 @@ export default function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Featured</h2>
-              <Link href="/shop?cat=featured" className="section-link">Shop All →</Link>
+              <Link href="/products?cat=featured" className="section-link">Shop All →</Link>
             </div>
             <div className="products-grid">
               {featuredProducts.map((p) => (
@@ -280,7 +280,7 @@ export default function HomePage() {
           <div className="container">
             <div className="section-header">
               <h2 className="section-title">Our Products</h2>
-              <Link href="/shop" className="section-link">Shop All →</Link>
+              <Link href="/products" className="section-link">Shop All →</Link>
             </div>
             <div className="products-grid">
               {allProducts.filter(p => p.status === 'Active').slice(0, 8).map((p) => (
@@ -298,7 +298,7 @@ export default function HomePage() {
             <h2 className="section-title-center">Shop By Category</h2>
             <div className="cat-grid-cards">
               {categories.map((cat) => (
-                <Link href={`/shop?cat=${encodeURIComponent(cat.name)}`} key={cat.id} className="cat-card">
+                <Link href={`/products?cat=${encodeURIComponent(cat.name)}`} key={cat.id} className="cat-card">
                   <div className="cat-card-img">
                     <img src={getCategoryImage(cat.name)} alt={cat.name} />
                     <div className="cat-card-overlay" />
