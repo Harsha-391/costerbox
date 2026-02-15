@@ -5,17 +5,22 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext"; // Import CartContext
 import Script from "next/script";
 import { Lock, CreditCard, MapPin } from "lucide-react";
-import "../../styles/checkout.css"; // <--- IMPORT THE NEW CSS
+import "../../styles/checkout.css";
 
 function CheckoutContent() {
     const searchParams = useSearchParams();
-    const productId = searchParams.get("productId");
     const router = useRouter();
     const { user } = useAuth();
+    const { cartItems, clearCart } = useCart(); // Access cart
 
-    const [product, setProduct] = useState(null);
+    // QUERY PARAMS for DIRECT BUY
+    const productId = searchParams.get("productId");
+    const directSize = searchParams.get("size");
+
+    const [itemsToCheckout, setItemsToCheckout] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
 
@@ -24,19 +29,90 @@ function CheckoutContent() {
         phone: "", address: "", city: "", zip: "",
     });
 
+    // --- INITIALIZE CHECKOUT ITEMS ---
     useEffect(() => {
-        const fetchProduct = async () => {
-            if (!productId) return;
-            const docRef = doc(db, "products", productId);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-                setProduct({ id: snap.id, ...snap.data() });
-                if (user?.email) setFormData(prev => ({ ...prev, email: user.email }));
+        const initCheckout = async () => {
+            if (productId) {
+                // === MODE A: DIRECT BUY (Single Item) ===
+                try {
+                    const docRef = doc(db, "products", productId);
+                    const snap = await getDoc(docRef);
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        const singleItem = {
+                            id: snap.id,
+                            ...data,
+                            selectedSize: directSize || (data.sizes?.[0]) || "Standard",
+                            quantity: 1,
+                            price: Number(data.price) // Ensure number
+                        };
+                        setItemsToCheckout([singleItem]);
+                    } else {
+                        alert("Product not found");
+                        router.push("/products");
+                    }
+                } catch (err) {
+                    console.error("Error fetching direct buy product:", err);
+                }
+            } else {
+                // === MODE B: CART CHECKOUT ===
+                if (cartItems.length === 0) {
+                    // If cart is empty and no direct buy, redirect
+                    // Check if we just mounted; maybe wait a tick? 
+                    // Actually CartContext loads from localstorage pretty fast.
+                    // We can show "Your cart is empty" instead of redirecting immediately if preferred,
+                    // but redirecting to cart page seems appropriate.
+                    // setCheck check inside render or effect?
+                }
+                setItemsToCheckout(cartItems);
+            }
+
+            // Prefill User Data
+            if (user?.email) {
+                setFormData(prev => ({ ...prev, email: user.email }));
             }
             setLoading(false);
         };
-        fetchProduct();
-    }, [productId, user]);
+
+        initCheckout();
+    }, [productId, directSize, user, cartItems.length]); // depend on cartItems.length to update if cart loads
+
+    // If Cart Mode and Empty, Redirect (Safe check)
+    useEffect(() => {
+        if (!loading && !productId && itemsToCheckout.length === 0) {
+            router.replace("/cart");
+        }
+    }, [loading, productId, itemsToCheckout, router]);
+
+
+    // --- CALCULATIONS ---
+    const calculateTotals = () => {
+        let totalRaw = 0;
+        let totalPayable = 0;
+        let totalPending = 0;
+
+        itemsToCheckout.forEach(item => {
+            // Clean price logic
+            const rawPrice = Number(item.price);
+            const itemTotal = rawPrice * item.quantity;
+
+            // Custom logic: 70% Advance
+            const isCustom = item.isCustomizable || false;
+
+            // Payable for this item
+            const itemPayable = isCustom ? Math.ceil(itemTotal * 0.70) : itemTotal;
+            const itemPending = itemTotal - itemPayable;
+
+            totalRaw += itemTotal;
+            totalPayable += itemPayable;
+            totalPending += itemPending;
+        });
+
+        return { totalRaw, totalPayable, totalPending };
+    };
+
+    const { totalRaw, totalPayable, totalPending } = calculateTotals();
+
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,31 +129,22 @@ function CheckoutContent() {
         }
 
         try {
-            // Safer conversion: Convert to String first, then remove non-digits
-            const priceString = String(product.price);
-            const rawPrice = parseInt(priceString.replace(/[^0-9]/g, ''));
-
-            // CUSTOMIZATION LOGIC: 70% Advance
-            const isCustom = product.isCustomizable || false;
-            const payableAmount = isCustom ? Math.ceil(rawPrice * 0.70) : rawPrice;
-            const pendingAmount = isCustom ? (rawPrice - payableAmount) : 0;
-
+            // 1. Create Razorpay Order
             const res = await fetch("/api/razorpay", {
                 method: "POST",
-                body: JSON.stringify({ amount: payableAmount }),
+                body: JSON.stringify({ amount: totalPayable }),
             });
             const orderData = await res.json();
 
             if (!orderData.id) throw new Error("Server error creating order");
 
+            // 2. Open Payment
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                amount: orderData.amount, // Amount in paisa
+                amount: orderData.amount, // paisa
                 currency: "INR",
                 name: "CosterBox Artisan",
-                description: isCustom
-                    ? `70% Advance for Custom ${product.name || product.title}`
-                    : `Payment for ${product.name || product.title}`,
+                description: `Payment for ${itemsToCheckout.length} Item(s)`,
                 order_id: orderData.id,
                 handler: async function (response) {
                     console.log("Payment Success. Creating Order...", response);
@@ -86,63 +153,61 @@ function CheckoutContent() {
                         const safePayload = {
                             userId: user?.uid || "guest",
                             userEmail: user?.email || "guest@example.com",
-                            product: {
-                                id: product?.id || "unknown_product",
-                                name: product?.name || product?.title || "Unnamed Product",
-                                price: rawPrice, // Store Full Price
-                                costPerItem: product?.costPerItem || 0, // Store Cost Price for Profit Calc
-                                image: product?.featuredImage || product?.media?.[0] || "/placeholder.jpg",
-                                isCustomizable: isCustom
-                            },
-                            shipping: {
-                                firstName: formData.firstName || "",
-                                lastName: formData.lastName || "",
-                                email: formData.email || "",
-                                phone: formData.phone || "",
-                                address: formData.address || "",
-                                city: formData.city || "",
-                                zip: formData.zip || "",
-                            },
+
+                            // UPDATED: Store Items Array
+                            items: itemsToCheckout.map(item => ({
+                                id: item.id,
+                                name: item.name || item.title || "Unnamed",
+                                price: Number(item.price),
+                                quantity: item.quantity,
+                                selectedSize: item.selectedSize || "",
+                                image: item.featuredImage || item.media?.[0] || "/placeholder.jpg",
+                                isCustomizable: !!item.isCustomizable,
+                                // Calculate specific amounts per item for record
+                                amountPaid: item.isCustomizable ? Math.ceil(Number(item.price) * item.quantity * 0.70) : (Number(item.price) * item.quantity)
+                            })),
+
+                            shipping: { ...formData },
+
                             payment: {
                                 razorpayPaymentId: response.razorpay_payment_id || "demo_id",
                                 razorpayOrderId: response.razorpay_order_id || "demo_order_id",
-                                paidAmount: payableAmount,
-                                pendingAmount: pendingAmount,
-                                totalAmount: rawPrice,
-                                type: isCustom ? "PARTIAL_ADVANCE" : "FULL_PAYMENT"
+                                paidAmount: totalPayable,
+                                pendingAmount: totalPending,
+                                totalAmount: totalRaw,
+                                type: totalPending > 0 ? "PARTIAL_ADVANCE" : "FULL_PAYMENT"
                             },
-                            // Generate a readable Order ID
+
                             orderId: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                            // Custom orders need artisan acceptance
-                            status: isCustom ? "pending_artisan_acceptance" : "paid",
-                            isCustomOrder: isCustom,
+                            status: totalPending > 0 ? "pending_artisan_acceptance" : "paid",
+                            isCustomOrder: totalPending > 0, // Flag if *any* custom exists
                             createdAt: serverTimestamp()
                         };
 
                         const docRef = await addDoc(collection(db, "orders"), safePayload);
 
-                        // AUTOMATICALLY CREATE SHIPROCKET ORDER FOR STANDARD ORDERS
-                        if (!isCustom) {
+                        // 3. Clear Cart ONLY if checking out from Cart
+                        if (!productId) {
+                            clearCart();
+                        }
+
+                        // 4. Auto-Ship (Only if fully paid? Or for all?)
+                        // Usually custom orders (pending > 0) don't ship immediately.
+                        // Standard orders (pending == 0) can ship.
+                        if (totalPending === 0) {
                             fetch('/api/shiprocket/create-order', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ orderId: docRef.id })
-                            }).then(res => res.json())
-                                .then(data => {
-                                    if (!data.success) console.error("Auto-shipping failed:", data.error);
-                                    else console.log("Auto-shipped:", data.data.shipment_id);
-                                })
-                                .catch(err => console.error("Auto-shipping error:", err));
+                            }).catch(console.error);
                         }
 
-                        alert(isCustom
-                            ? "Custom Order Placed! Notification sent to nearby artisans."
-                            : "Payment Successful! Order Placed.");
-
+                        alert("Order Placed Successfully!");
                         router.push("/orders");
+
                     } catch (err) {
-                        console.error("Error saving order to Firestore:", err);
-                        alert("Payment successful but failed to save order. Please contact support.");
+                        console.error("Error saving order:", err);
+                        alert("Payment successful but order save failed. Contact support.");
                     }
                 },
                 prefill: {
@@ -158,18 +223,16 @@ function CheckoutContent() {
 
         } catch (error) {
             console.error(error);
-            alert("Payment failed. Please try again.");
+            alert("Payment init failed. Try again.");
         }
         setProcessing(false);
     };
 
     if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}>Loading Checkout...</div>;
-    if (!product) return <div style={{ padding: '100px', textAlign: 'center' }}>Product not found.</div>;
 
     return (
         <div className="checkout-container">
             <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-
             <h1 className="checkout-title">Secure Checkout</h1>
 
             <div className="checkout-grid">
@@ -177,56 +240,23 @@ function CheckoutContent() {
                 {/* LEFT: SHIPPING FORM */}
                 <div className="shipping-section">
                     <h2><MapPin size={20} /> Shipping Details</h2>
-
                     <form id="checkout-form" onSubmit={handlePayment}>
                         <div className="form-row">
-                            <input
-                                name="firstName" placeholder="First Name" required
-                                className="input-field" autoComplete="given-name"
-                                onChange={handleChange}
-                            />
-                            <input
-                                name="lastName" placeholder="Last Name" required
-                                className="input-field" autoComplete="family-name"
-                                onChange={handleChange}
-                            />
+                            <input name="firstName" placeholder="First Name" required className="input-field" onChange={handleChange} />
+                            <input name="lastName" placeholder="Last Name" required className="input-field" onChange={handleChange} />
                         </div>
-
                         <div className="form-group">
-                            <input
-                                name="email" type="email" placeholder="Email Address" required
-                                className="input-field" autoComplete="email"
-                                value={formData.email} onChange={handleChange}
-                            />
+                            <input name="email" type="email" placeholder="Email Address" required className="input-field" value={formData.email} onChange={handleChange} />
                         </div>
-
                         <div className="form-group">
-                            <input
-                                name="phone" type="tel" placeholder="Mobile Number" required
-                                className="input-field" autoComplete="tel"
-                                onChange={handleChange}
-                            />
+                            <input name="phone" type="tel" placeholder="Mobile Number" required className="input-field" onChange={handleChange} />
                         </div>
-
                         <div className="form-group">
-                            <input
-                                name="address" placeholder="Street Address" required
-                                className="input-field" autoComplete="street-address"
-                                onChange={handleChange}
-                            />
+                            <input name="address" placeholder="Street Address" required className="input-field" onChange={handleChange} />
                         </div>
-
                         <div className="form-row">
-                            <input
-                                name="city" placeholder="City" required
-                                className="input-field" autoComplete="address-level2"
-                                onChange={handleChange}
-                            />
-                            <input
-                                name="zip" placeholder="ZIP Code" required
-                                className="input-field" autoComplete="postal-code"
-                                onChange={handleChange}
-                            />
+                            <input name="city" placeholder="City" required className="input-field" onChange={handleChange} />
+                            <input name="zip" placeholder="ZIP Code" required className="input-field" onChange={handleChange} />
                         </div>
                     </form>
                 </div>
@@ -235,56 +265,54 @@ function CheckoutContent() {
                 <div className="order-summary">
                     <h3 className="summary-title">Order Summary</h3>
 
-                    <div className="product-snippet">
-                        <img
-                            src={product.featuredImage || product.media?.[0]}
-                            className="snippet-img"
-                        />
-                        <div className="snippet-info">
-                            <h4>{product.name || product.title}</h4>
-                            <p>{product.region}</p>
-                        </div>
+                    <div className="checkout-items-list">
+                        {itemsToCheckout.map((item, idx) => (
+                            <div key={idx} className="product-snippet">
+                                <img
+                                    src={item.featuredImage || item.media?.[0] || "/placeholder.jpg"}
+                                    className="snippet-img"
+                                    alt="product"
+                                />
+                                <div className="snippet-info">
+                                    <h4>{item.name || item.title}</h4>
+                                    <p>Size: {item.selectedSize} | Qty: {item.quantity}</p>
+                                    <p style={{ fontWeight: 600 }}>₹{Number(item.price).toLocaleString('en-IN')}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <div className="price-row">
                         <span>Subtotal</span>
-                        <span>{product.price}</span>
-                    </div>
-                    <div className="price-row">
-                        <span>Shipping</span>
-                        <span>Free</span>
+                        <span>₹{totalRaw.toLocaleString('en-IN')}</span>
                     </div>
 
-                    {/* PRICE BREAKDOWN */}
-                    <div className="total-row" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee' }}>
-                        <span>Total Price</span>
-                        <span>{product.price}</span>
-                    </div>
-
-                    {product.isCustomizable && (
-                        <>
-                            <div className="price-row" style={{ color: '#166534', fontWeight: 'bold' }}>
-                                <span>Advance (70%)</span>
-                                <span>₹{Math.ceil(parseInt(String(product.price).replace(/[^0-9]/g, '')) * 0.70)}</span>
-                            </div>
-                            <div className="price-row" style={{ color: '#854d0e', fontSize: '13px' }}>
-                                <span>Remaining Balance (30%)</span>
-                                <span>₹{parseInt(String(product.price).replace(/[^0-9]/g, '')) - Math.ceil(parseInt(String(product.price).replace(/[^0-9]/g, '')) * 0.70)}</span>
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#666', marginTop: '5px', fontStyle: 'italic' }}>
-                                * Custom order. Remaining balance due before shipping.
-                            </div>
-                        </>
+                    {totalPending > 0 && (
+                        <div className="price-row" style={{ color: '#166534', fontWeight: 'bold' }}>
+                            <span>Payable Now (Advance)</span>
+                            <span>₹{totalPayable.toLocaleString('en-IN')}</span>
+                        </div>
                     )}
 
-                    {/* NOTE: We move the button here so it's always visible with the summary */}
+                    {totalPending > 0 && (
+                        <div className="price-row" style={{ color: '#854d0e' }}>
+                            <span>Pending Balance</span>
+                            <span>₹{totalPending.toLocaleString('en-IN')}</span>
+                        </div>
+                    )}
+
+                    <div className="total-row">
+                        <span>Total Payable</span>
+                        <span>₹{totalPayable.toLocaleString('en-IN')}</span>
+                    </div>
+
                     <button
                         type="submit"
-                        form="checkout-form" /* Links to the form on the left */
+                        form="checkout-form"
                         disabled={processing}
                         className="btn-pay"
                     >
-                        {processing ? "Processing..." : (product.isCustomizable ? "Pay Advance" : `Pay ${product.price}`)}
+                        {processing ? "Processing..." : `Pay ₹${totalPayable.toLocaleString('en-IN')}`}
                         {!processing && <CreditCard size={18} />}
                     </button>
 

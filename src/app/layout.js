@@ -1,13 +1,16 @@
 /* src/app/layout.js */
 import '../styles/globals.css';
 import { AuthProvider } from '../context/AuthContext';
-import Header from '../components/Header'; // <--- IMPORT THIS
-import Footer from '../components/Footer'; // <--- IMPORT THIS
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import PromoStrip from '../components/PromoStrip';
 
 export const metadata = {
   title: 'Costerbox',
   description: 'Tribal Art, Reimagined.',
 };
+
+import { CartProvider } from '../context/CartContext';
 
 export default function RootLayout({ children }) {
   return (
@@ -18,18 +21,21 @@ export default function RootLayout({ children }) {
       </head>
       <body suppressHydrationWarning={true}>
         <AuthProvider>
-           
-           {/* 1. Header is now global */}
-           <Header /> 
-           
-           {/* 2. Main Content */}
-           <div style={{ minHeight: '80vh' }}>
-             {children}
-           </div>
+          <CartProvider>
+            {/* 0. Promo Strip — above header */}
+            <PromoStrip />
 
-           {/* 3. Footer is now global */}
-           <Footer />
+            {/* 1. Header is now global */}
+            <Header />
 
+            {/* 2. Main Content */}
+            <div style={{ minHeight: '80vh' }}>
+              {children}
+            </div>
+
+            {/* 3. Footer is now global */}
+            <Footer />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

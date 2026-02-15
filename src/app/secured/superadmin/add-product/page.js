@@ -26,7 +26,15 @@ function AddProductContent() {
         stock: '', sku: '', barcode: '', weight: '', hsCode: '',
         status: 'Active', category: '', vendor: 'Costerbox',
         media: [], tags: '',
-        seoTitle: '', seoDesc: '', seoHandle: ''
+        seoTitle: '', seoDesc: '', seoHandle: '',
+        // NEW FIELDS
+        sizes: '', // Comma separated string for input
+        highlights: [], // Array of { label, value }
+        materials: '',
+        shippingInfo: '',
+        careInfo: '',
+        faqs: '',
+        sizeGuide: ''
     });
 
     // MEDIA & CATEGORY STATE
@@ -67,29 +75,18 @@ function AddProductContent() {
     // ========= QUILL CONFIG =========
     const quillModules = useMemo(() => ({
         toolbar: [
-            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-            [{ 'font': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }],
+            [{ 'header': [1, 2, 3, false] }],
             ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
-            [{ 'script': 'sub' }, { 'script': 'super' }],
-            ['blockquote', 'code-block'],
             [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            [{ 'indent': '-1' }, { 'indent': '+1' }],
-            [{ 'direction': 'rtl' }],
-            [{ 'align': [] }],
-            ['link', 'image', 'video'],
-            ['clean']
+            ['link', 'clean']
         ],
     }), []);
 
     const quillFormats = [
-        'header', 'font', 'size',
+        'header',
         'bold', 'italic', 'underline', 'strike',
-        'color', 'background', 'script',
-        'blockquote', 'code-block',
-        'list', 'indent', 'direction', 'align',
-        'link', 'image', 'video'
+        'list', 'bullet',
+        'link'
     ];
 
     // ========= FETCH DATA IF EDITING =========
@@ -104,7 +101,15 @@ function AddProductContent() {
                         media: data.media || (data.featuredImage ? [data.featuredImage] : []),
                         seoTitle: data.seoTitle || '',
                         seoDesc: data.seoDesc || '',
-                        seoHandle: data.seoHandle || ''
+                        seoHandle: data.seoHandle || '',
+                        // Map new fields
+                        sizes: (data.sizes || []).join(', '),
+                        highlights: data.highlights || [],
+                        materials: data.materials || '',
+                        shippingInfo: data.shippingInfo || '',
+                        careInfo: data.careInfo || '',
+                        faqs: data.faqs || '',
+                        sizeGuide: data.sizeGuide || ''
                     });
                     // If editing & seo fields were manually set, mark them as manual
                     if (data.seoTitle) setSeoManualTitle(true);
@@ -145,6 +150,22 @@ function AddProductContent() {
 
     // ========= HANDLERS =========
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    // Highlight Handlers
+    const addHighlight = () => {
+        setFormData(prev => ({ ...prev, highlights: [...(prev.highlights || []), { label: '', value: '' }] }));
+    };
+
+    const updateHighlight = (index, field, val) => {
+        const updated = [...(formData.highlights || [])];
+        updated[index][field] = val;
+        setFormData({ ...formData, highlights: updated });
+    };
+
+    const removeHighlight = (index) => {
+        const updated = (formData.highlights || []).filter((_, i) => i !== index);
+        setFormData({ ...formData, highlights: updated });
+    };
 
     const handleFileSelect = (e) => {
         if (e.target.files) {
@@ -261,6 +282,7 @@ function AddProductContent() {
 
             // Parse tags string into array
             const tagsArray = (formData.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+            const sizesArray = (formData.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
 
             const payload = {
                 ...formData,
@@ -269,6 +291,7 @@ function AddProductContent() {
                 media: finalMedia,
                 featuredImage: finalMedia[0] || '',
                 tags: tagsArray,
+                sizes: sizesArray, // Override string with array
                 seoTitle: formData.seoTitle,
                 seoDesc: formData.seoDesc,
                 seoHandle: formData.seoHandle,
@@ -331,7 +354,90 @@ function AddProductContent() {
                         </div>
                     </div>
 
-                    {/* 2. Media — Drag & Drop Reorder */}
+                    {/* 2. Highlights & Sizes (NEW) */}
+                    <div className="card">
+                        <h3>Product Attributes</h3>
+
+                        <div className="form-group">
+                            <label>Sizes (Separate by comma)</label>
+                            <input
+                                name="sizes"
+                                value={formData.sizes}
+                                onChange={handleChange}
+                                className="input-field"
+                                placeholder="S, M, L, XL, XXL"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Highlights (e.g. Fit, Fabric, Color)</label>
+                            {formData.highlights && formData.highlights.map((h, i) => (
+                                <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                    <input
+                                        className="input-field"
+                                        placeholder="Label (e.g. Fit)"
+                                        value={h.label}
+                                        onChange={(e) => updateHighlight(i, 'label', e.target.value)}
+                                        style={{ flex: 1 }}
+                                    />
+                                    <input
+                                        className="input-field"
+                                        placeholder="Value (e.g. Regular)"
+                                        value={h.value}
+                                        onChange={(e) => updateHighlight(i, 'value', e.target.value)}
+                                        style={{ flex: 1 }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeHighlight(i)}
+                                        style={{ background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px', width: '36px', cursor: 'pointer', fontSize: '18px' }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={addHighlight}
+                                className="btn-secondary"
+                                style={{ fontSize: '12px', padding: '6px 12px' }}
+                            >
+                                + Add Highlight
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 3. Detailed Information (NEW) */}
+                    <div className="card">
+                        <h3>Detailed Information</h3>
+
+                        <div className="form-group">
+                            <label>Materials</label>
+                            <ReactQuill theme="snow" value={formData.materials} onChange={(val) => setFormData({ ...formData, materials: val })} modules={quillModules} formats={quillFormats} placeholder="Material details..." />
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '20px' }}>
+                            <label>Shipping Info</label>
+                            <ReactQuill theme="snow" value={formData.shippingInfo} onChange={(val) => setFormData({ ...formData, shippingInfo: val })} modules={quillModules} formats={quillFormats} placeholder="Shipping details..." />
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '20px' }}>
+                            <label>Care Instructions</label>
+                            <ReactQuill theme="snow" value={formData.careInfo} onChange={(val) => setFormData({ ...formData, careInfo: val })} modules={quillModules} formats={quillFormats} placeholder="Care instructions..." />
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '20px' }}>
+                            <label>FAQs</label>
+                            <ReactQuill theme="snow" value={formData.faqs} onChange={(val) => setFormData({ ...formData, faqs: val })} modules={quillModules} formats={quillFormats} placeholder="Product FAQs..." />
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '20px' }}>
+                            <label>Size Guide (Optional override)</label>
+                            <ReactQuill theme="snow" value={formData.sizeGuide} onChange={(val) => setFormData({ ...formData, sizeGuide: val })} modules={quillModules} formats={quillFormats} placeholder="Custom size guide table..." />
+                        </div>
+                    </div>
+
+                    {/* 4. Media — Drag & Drop Reorder */}
                     <div className="card">
                         <h3>
                             Media
@@ -397,7 +503,7 @@ function AddProductContent() {
                         )}
                     </div>
 
-                    {/* 3. Pricing */}
+                    {/* 5. Pricing */}
                     <div className="card">
                         <h3>Pricing</h3>
                         <div className="form-row">
@@ -420,7 +526,7 @@ function AddProductContent() {
                         </div>
                     </div>
 
-                    {/* 4. Inventory */}
+                    {/* 6. Inventory */}
                     <div className="card">
                         <h3>Inventory</h3>
                         <div className="form-row">
@@ -439,7 +545,7 @@ function AddProductContent() {
                         </div>
                     </div>
 
-                    {/* 5. Shipping */}
+                    {/* 7. Shipping */}
                     <div className="card">
                         <h3>Shipping</h3>
                         <div className="form-row">
@@ -454,7 +560,7 @@ function AddProductContent() {
                         </div>
                     </div>
 
-                    {/* 6. SEO — Dynamic Meta Title & Description */}
+                    {/* 8. SEO — Dynamic Meta Title & Description */}
                     <div className="card seo-card">
                         <h3>🔍 Search Engine Listing</h3>
 
@@ -634,7 +740,6 @@ function AddProductContent() {
                             <div className="helper-text">Separate tags with a comma. Use: <strong>new-arrival</strong>, <strong>bestseller</strong>, <strong>featured</strong> to show on homepage sections.</div>
                         </div>
                     </div>
-
                 </div>
 
                 {/* === SAVE FOOTER === */}

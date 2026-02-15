@@ -178,16 +178,7 @@ export default function HomePage() {
 
   return (
     <>
-      {/* ============ 1. ANNOUNCEMENT BAR ============ */}
-      <div className="announce-bar">
-        <div className="announce-track">
-          <span>✨ Additional 5% OFF on Prepaid Orders</span>
-          <span className="announce-sep">|</span>
-          <span>🚚 Free Shipping on Orders Above ₹2,999</span>
-          <span className="announce-sep">|</span>
-          <span>📦 Dispatch Within 72 Hours</span>
-        </div>
-      </div>
+
 
       {/* ============ 2. HERO SLIDER ============ */}
       <section className="hero-slider">
@@ -296,17 +287,14 @@ export default function HomePage() {
         <section className="section-category">
           <div className="container">
             <h2 className="section-title-center">Shop By Category</h2>
-            <div className="cat-grid-cards">
+            <div className="cat-round-grid">
               {categories.map((cat) => (
-                <Link href={`/products?cat=${encodeURIComponent(cat.name)}`} key={cat.id} className="cat-card">
-                  <div className="cat-card-img">
+                <Link href={`/products?cat=${encodeURIComponent(cat.name)}`} key={cat.id} className="cat-round-item">
+                  <div className="cat-round-img-wrap">
                     <img src={getCategoryImage(cat.name)} alt={cat.name} />
-                    <div className="cat-card-overlay" />
                   </div>
-                  <div className="cat-card-info">
-                    <h3>{cat.name}</h3>
-                    <span>{getCategoryCount(cat.name)} Items</span>
-                  </div>
+                  <h3 className="cat-round-name">{cat.name}</h3>
+                  <span className="cat-round-count">{getCategoryCount(cat.name)} Items</span>
                 </Link>
               ))}
             </div>

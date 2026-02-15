@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { Search, ShoppingBag, User, Menu, X, Package, LogOut, ChevronDown } from 'lucide-react';
@@ -13,6 +14,7 @@ export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout } = useAuth();
+    const { cartCount } = useCart();
 
     // State for Mobile Menu, Search & Products Dropdown
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -115,8 +117,23 @@ export default function Header() {
                         </button>
                     </div>
 
-                    <Link href="/cart" className="icon-link" title="Cart">
+                    <Link href="/cart" className="icon-link" title="Cart" style={{ position: 'relative' }}>
                         <ShoppingBag size={20} />
+                        {cartCount > 0 && <span style={{
+                            position: 'absolute',
+                            top: '-5px',
+                            right: '-5px',
+                            background: '#c41e3a',
+                            color: 'white',
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            borderRadius: '50%',
+                            width: '16px',
+                            height: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>{cartCount}</span>}
                     </Link>
 
                     {/* DYNAMIC USER SECTION */}
@@ -145,8 +162,23 @@ export default function Header() {
                     <div className="mobile-search-trigger">
                         <Search size={20} />
                     </div>
-                    <Link href="/cart" className="mobile-cart-link">
+                    <Link href="/cart" className="mobile-cart-link" style={{ position: 'relative' }}>
                         <ShoppingBag size={20} />
+                        {cartCount > 0 && <span style={{
+                            position: 'absolute',
+                            top: '-5px',
+                            right: '-5px',
+                            background: '#c41e3a',
+                            color: 'white',
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            borderRadius: '50%',
+                            width: '16px',
+                            height: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>{cartCount}</span>}
                     </Link>
                 </div>
             </div>
