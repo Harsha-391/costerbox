@@ -1,14 +1,14 @@
-/* src/app/checkout/page.js */
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../context/AuthContext";
-import { useCart } from "../../context/CartContext"; // Import CartContext
+import { useCart } from "../../context/CartContext";
 import Script from "next/script";
 import { Lock, CreditCard, MapPin } from "lucide-react";
 import "../../styles/checkout.css";
+import { generateInvoicePDF } from "../../utils/generateInvoice"; // Import PDF Generator
 
 function CheckoutContent() {
     const searchParams = useSearchParams();
@@ -149,6 +149,7 @@ function CheckoutContent() {
                 handler: async function (response) {
                     console.log("Payment Success. Creating Order...", response);
 
+                    // ... inside handlePayment ...
                     try {
                         const safePayload = {
                             userId: user?.uid || "guest",
@@ -191,9 +192,7 @@ function CheckoutContent() {
                             clearCart();
                         }
 
-                        // 4. Auto-Ship (Only if fully paid? Or for all?)
-                        // Usually custom orders (pending > 0) don't ship immediately.
-                        // Standard orders (pending == 0) can ship.
+                        // 4. Auto-Ship (Only if fully paid)
                         if (totalPending === 0) {
                             fetch('/api/shiprocket/create-order', {
                                 method: 'POST',
@@ -202,13 +201,20 @@ function CheckoutContent() {
                             }).catch(console.error);
                         }
 
-                        alert("Order Placed Successfully!");
+                        // === GENERATE INVOICE ===
+                        // Generate the bill immediately for the user
+                        // We use a safe local object because 'createdAt' is serverTimestamp() which is not a date locally yet.
+                        // We can just use new Date() for the PDF.
+                        generateInvoicePDF({ ...safePayload, createdAt: { seconds: Date.now() / 1000 } });
+
+                        alert("Order Placed Successfully! Your Invoice is downloading...");
                         router.push("/orders");
 
                     } catch (err) {
                         console.error("Error saving order:", err);
                         alert("Payment successful but order save failed. Contact support.");
                     }
+                    // ...
                 },
                 prefill: {
                     name: `${formData.firstName} ${formData.lastName}`,

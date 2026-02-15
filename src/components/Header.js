@@ -114,11 +114,46 @@ export default function Header() {
 
                     {/* Search Bar Logic */}
                     {/* SEARCH */}
+                    {/* SEARCH */}
                     <div className={`search-container ${searchOpen ? 'active' : ''}`}>
-                        <input type="text" className="search-input" placeholder="Search..." />
-                        <button className="icon-link search-trigger" onClick={() => setSearchOpen(!searchOpen)}>
-                            <Search size={20} />
-                        </button>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const term = e.target.search.value;
+                            if (term.trim()) {
+                                router.push(`/products?search=${encodeURIComponent(term)}`);
+                                setSearchOpen(false);
+                            }
+                        }}
+                            style={{ display: 'flex', alignItems: 'center' }}
+                        >
+                            <input
+                                name="search"
+                                type="text"
+                                className="search-input"
+                                placeholder="Search..."
+                                autoComplete="off"
+                            />
+                            <button type="button" className="icon-link search-trigger" onClick={() => {
+                                // If closing, just close. If opening, focus?
+                                if (searchOpen) {
+                                    // logic to submit if clicked again? Or just toggle?
+                                    // User usually expects toggle or submit. Let's make icon submit if text exists?
+                                    // For now, toggle behavior is requested, but let's be smart.
+                                    // If text exists, submit. Else toggle.
+                                    const input = document.querySelector('.search-input');
+                                    if (input && input.value.trim()) {
+                                        router.push(`/products?search=${encodeURIComponent(input.value.trim())}`);
+                                        setSearchOpen(false);
+                                    } else {
+                                        setSearchOpen(false);
+                                    }
+                                } else {
+                                    setSearchOpen(true);
+                                }
+                            }}>
+                                <Search size={20} />
+                            </button>
+                        </form>
                     </div>
 
                     {/* WISHLIST */}
@@ -211,27 +246,63 @@ export default function Header() {
             {/* --- MOBILE SIDEBAR MENU --- */}
             <div className={`mobile-menu-expansion ${mobileMenuOpen ? 'open' : ''}`}>
                 <div className="mobile-menu-header">
-                    <span className="menu-title">Menu</span>
+                    <span className="menu-title">
+                        {user ? `Hi, ${user.displayName?.split(' ')[0] || 'User'}` : 'Menu'}
+                    </span>
                     <X className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)} />
                 </div>
 
                 <Link href="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
 
-                {/* Mobile Products Section */}
-                <div className="mobile-link mobile-section-title">Products</div>
-                <Link href="/products" className="mobile-link mobile-sublink" onClick={() => setMobileMenuOpen(false)}>All Products</Link>
-                {categories.map((cat, i) => (
-                    <Link
-                        href={`/products?cat=${encodeURIComponent(cat)}`}
-                        key={i}
-                        className="mobile-link mobile-sublink"
-                        onClick={() => setMobileMenuOpen(false)}
+                {/* Mobile Products Accordion */}
+                <div style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <button
+                        className="mobile-link mobile-accordion-trigger"
+                        onClick={() => setProductsOpen(!productsOpen)}
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textAlign: 'left'
+                        }}
                     >
-                        {cat}
-                    </Link>
-                ))}
+                        Products
+                        <ChevronDown size={16} style={{ transform: productsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }} />
+                    </button>
+
+                    {productsOpen && (
+                        <div className="mobile-accordion-content" style={{ background: '#fafafa' }}>
+                            <Link
+                                href="/products"
+                                className="mobile-link mobile-sublink"
+                                onClick={() => setMobileMenuOpen(false)}
+                                style={{ textTransform: 'none', fontWeight: 600 }}
+                            >
+                                All Products
+                            </Link>
+                            {categories.map((cat, i) => (
+                                <Link
+                                    href={`/products?cat=${encodeURIComponent(cat)}`}
+                                    key={i}
+                                    className="mobile-link mobile-sublink"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    // User requested normal writing (not caps)
+                                    style={{ textTransform: 'capitalize' }}
+                                >
+                                    {cat}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <Link href="/shop" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Archive</Link>
+                <Link href="/about" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+                <Link href="/contact" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
                 <Link href="/cart" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Cart</Link>
 
                 {user ? (

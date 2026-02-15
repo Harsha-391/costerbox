@@ -47,14 +47,32 @@ function ProductsPageContent() {
     }, [catFromUrl]);
 
     // --- FILTER LOGIC ---
-    const filteredProducts = filter === 'All'
-        ? products
-        : products.filter(p => {
-            if (p.category === filter) return true;
-            if (p.region === filter) return true;
-            if (Array.isArray(p.tags) && p.tags.includes(filter.toLowerCase())) return true;
-            return false;
-        });
+    const searchTerm = searchParams.get('search')?.toLowerCase() || "";
+
+    const filteredProducts = products.filter(p => {
+        // 1. Search Filter (Higher Priority)
+        if (searchTerm) {
+            const inName = (p.name || p.title || "").toLowerCase().includes(searchTerm);
+            const inDesc = (p.description || "").toLowerCase().includes(searchTerm);
+            const inRegion = (p.region || "").toLowerCase().includes(searchTerm);
+            const inTags = Array.isArray(p.tags) && p.tags.some(t => t.toLowerCase().includes(searchTerm));
+
+            if (!inName && !inDesc && !inRegion && !inTags) return false;
+        }
+
+        // 2. Category Filter
+        if (filter !== 'All') {
+            const pCat = p.category || "";
+            const pRegion = p.region || "";
+            const pTags = Array.isArray(p.tags) ? p.tags : [];
+
+            // Check exact category, region, or tag match
+            const matchesCategory = pCat === filter || pRegion === filter || pTags.includes(filter.toLowerCase());
+            if (!matchesCategory) return false;
+        }
+
+        return true;
+    });
 
     if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}>Loading Products...</div>;
 
@@ -109,14 +127,14 @@ function ProductsPageContent() {
                 {/* MAIN CONTENT */}
                 <main className="main-gallery">
                     <div className="gallery-header">
-                        <h1>Products</h1>
-                        <p>Shop our curated collection. Direct shipping, no customization wait.</p>
+                        <h1>{searchTerm ? `Search Results for "${searchTerm}"` : "Products"}</h1>
+                        <p>{searchTerm ? `${filteredProducts.length} items found` : "Shop our curated collection. Direct shipping, no customization wait."}</p>
                     </div>
 
                     <div className="products-grid">
                         {filteredProducts.map(product => (
                             <div key={product.id} className="product-card">
-                                <Link href={`/shop/${product.seoHandle || product.id}`} style={{ display: 'block', cursor: 'pointer' }}>
+                                <Link href={`/shop/${product.seoHandle || product.id}`} style={{ display: 'block', cursor: 'pointer', height: '100%' }}>
                                     <div className="img-box" style={{ position: 'relative' }}>
                                         {product.badge && <span className="badge">{product.badge}</span>}
 
@@ -169,38 +187,38 @@ function ProductsPageContent() {
                                             );
                                         })()}
                                     </div>
-                                </Link>
 
-                                <div className="card-details">
-                                    <span className="p-region">{product.category || product.region}</span>
+                                    <div className="card-details">
+                                        <span className="p-region">{product.category || product.region}</span>
 
-                                    <Link href={`/shop/${product.seoHandle || product.id}`} style={{ textDecoration: 'none' }}>
                                         <h3 className="p-name">{product.name || product.title}</h3>
-                                    </Link>
 
-                                    <span className="p-price">
-                                        ₹{Number(product.price).toLocaleString('en-IN')}
-                                        {product.comparePrice && (
-                                            <span style={{ textDecoration: 'line-through', color: '#999', marginLeft: '8px', fontSize: '0.85rem' }}>
-                                                ₹{Number(product.comparePrice).toLocaleString('en-IN')}
-                                            </span>
-                                        )}
-                                    </span>
+                                        <span className="p-price">
+                                            ₹{Number(product.price).toLocaleString('en-IN')}
+                                            {product.comparePrice && (
+                                                <span style={{ textDecoration: 'line-through', color: '#999', marginLeft: '8px', fontSize: '0.85rem' }}>
+                                                    ₹{Number(product.comparePrice).toLocaleString('en-IN')}
+                                                </span>
+                                            )}
+                                        </span>
 
-                                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                        <button className="add-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                            <ShoppingBag size={16} /> Add to Bag
+                                        <button className="add-btn">
+                                            <ShoppingBag size={14} style={{ marginRight: '6px' }} /> Add to Bag
                                         </button>
                                     </div>
-                                </div>
+                                </Link>
                             </div>
                         ))}
                     </div>
 
                     {filteredProducts.length === 0 && (
                         <div style={{ textAlign: 'center', marginTop: '50px', color: '#999' }}>
-                            <p>No products found in this category.</p>
-                            <button onClick={() => setFilter('All')} style={{ textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>View All</button>
+                            <p>No products found {searchTerm ? `for "${searchTerm}"` : "in this category"}.</p>
+                            <button onClick={() => {
+                                // Reset both filter and search if possible, or just clear filter
+                                setFilter('All');
+                                if (searchTerm) window.location.href = '/products'; // hard reset for search clear
+                            }} style={{ textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>View All Products</button>
                         </div>
                     )}
                 </main>

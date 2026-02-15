@@ -155,15 +155,21 @@
     background: #f8f6f3 !important;
 }
 
-/* --- SEARCH BAR DESKTOP --- */
+/* --- SEARCH BAR DESKTOP (Overlap Fix) --- */
 .search-container {
     display: flex;
     align-items: center;
     position: relative;
+    /* Removed overflow: hidden so button is clickable but input sits nicely */
 }
 
 .search-trigger {
     z-index: 2;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    /* align icon */
 }
 
 .search-input {
@@ -171,6 +177,7 @@
     opacity: 0;
     padding: 0;
     border: none;
+    /* No border initially */
     border-bottom: 1px solid transparent;
     background: transparent;
     transition: all 0.4s ease;
@@ -178,17 +185,28 @@
     font-family: 'Lato', sans-serif;
     font-size: 14px;
     color: var(--text-main, #333);
-    position: absolute;
-    right: 30px;
+
+    /* Layout change: Not absolute, but hidden via width */
+    overflow: hidden;
+    margin-right: 0;
 }
 
 .search-container.active .search-input {
     width: 200px;
+    /* Expands pushing elements to the right? Or absolute overlay? */
+    /* If we want to push: keep layout flow. */
     opacity: 1;
     padding: 5px 0;
     border-bottom-color: var(--text-main, #333);
     margin-right: 10px;
+    /* Space between input and icon */
 }
+
+/* If user wants it NOT to push elements (because that shifts layout), 
+   we can keep absolute but ensure it has background and high z-index.
+   But user said "overlapping with menu", which implies it looked messy on top.
+   Pushing content (width transition) is cleaner and avoids overlap.
+*/
 
 /* --- HIDE MOBILE ELEMENTS ON DESKTOP --- */
 .mobile-toggle {
@@ -375,9 +393,13 @@
         border-bottom: 1px solid #f0f0f0;
         text-decoration: none;
         color: #333;
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        font-size: 15px;
+        /* Slightly larger for readability */
+        text-transform: capitalize;
+        /* Normal writing (Capitalize first letter) */
+        letter-spacing: 0.5px;
+        display: block;
+        /* Ensure full width clickable */
     }
 
     .mobile-link-btn {
