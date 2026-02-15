@@ -104,7 +104,7 @@ export default function AboutPage() {
                     <div className="founders-grid">
 
                         <div className="founder-card">
-                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop" alt="Sumit K. Soni" className="founder-photo" />
+                            <img src="https://firebasestorage.googleapis.com/v0/b/costerbox-148f2.firebasestorage.app/o/sumit.jpeg?alt=media&token=c096f46f-4c7c-4bd6-bad2-ce89388ef63e" alt="Sumit K. Soni" className="founder-photo" />
                             <div className="founder-bio">
                                 <h3>Sumit K. Soni</h3>
                                 <span className="founder-role">Founder & CEO</span>
@@ -118,7 +118,7 @@ export default function AboutPage() {
                         </div>
 
                         <div className="founder-card">
-                            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=1000&auto=format&fit=crop" alt="Sukhadev Dewasi" className="founder-photo" />
+                            <img src="https://firebasestorage.googleapis.com/v0/b/costerbox-148f2.firebasestorage.app/o/sukhdev.jpg?alt=media&token=060e006e-f0d3-434a-bbfe-91dbc092014d" alt="Sukhadev Dewasi" className="founder-photo" />
                             <div className="founder-bio">
                                 <h3>Sukhadev Dewasi</h3>
                                 <span className="founder-role">Co-Founder & CFO</span>

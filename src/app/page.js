@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import '@/styles/home.css';
+import HomeCustomServices from '@/components/HomeCustomServices';
 
 export default function HomePage() {
   // ========= STATE =========
@@ -65,6 +66,15 @@ export default function HomePage() {
 
   // ========= HERO SLIDER =========
   const heroSlides = [
+
+    {
+      image: '/img14.jpg',
+      subtitle: 'Tribal Art Reimagined',
+      title: 'CRAFTED WITH LOVE\nFOR YOU',
+      cta: 'Shop Collection',
+      link: '/products',
+      align: 'left'
+    },
     {
       image: '/heroimage.png',
       subtitle: 'Est. 2024 • Jaipur, India',
@@ -72,14 +82,6 @@ export default function HomePage() {
       cta: 'Shop Now',
       link: '/products',
       align: 'center'
-    },
-    {
-      image: '/img14.jpg',
-      subtitle: 'Ready to Ship',
-      title: 'DISPATCH WITHIN\n72 HOURS',
-      cta: 'Shop Collection',
-      link: '/products',
-      align: 'left'
     }
   ];
 
@@ -281,6 +283,9 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ============ CUSTOM SERVICES ============ */}
+      <HomeCustomServices />
 
       {/* ============ 6. SHOP BY CATEGORY (Dynamic from Firestore) ============ */}
       {categories.length > 0 && (
