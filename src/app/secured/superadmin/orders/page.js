@@ -5,13 +5,16 @@ import { collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } 
 import { db } from '../../../../lib/firebase';
 import { Package, Truck, CheckCircle, Clock, MapPin, ExternalLink, MessageCircle, AlertTriangle } from 'lucide-react';
 
+import { Search } from 'lucide-react'; // Import Icon
+
 export default function AdminOrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [editingOrder, setEditingOrder] = useState(null);
+    const [searchTerm, setSearchTerm] = useState(""); // Search State
 
-    // Robust Date Helper
+    // ... (getTime, formatDate remain same) ...
     const getTime = (t) => {
         if (!t) return 0;
         if (typeof t.toMillis === 'function') return t.toMillis();
@@ -47,6 +50,17 @@ export default function AdminOrdersPage() {
 
     useEffect(() => { fetchOrders(); }, []);
 
+    // Filter Logic
+    const filteredOrders = orders.filter(o =>
+        (o.id && o.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (o.orderId && o.orderId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (o.shipping && o.shipping.firstName && o.shipping.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (o.shipping && o.shipping.lastName && o.shipping.lastName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (o.userEmail && o.userEmail.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (o.shipping && o.shipping.phone && o.shipping.phone.includes(searchTerm))
+    );
+
+    // ... (handleShip, handleUpdateStatus, getStatusStyle remain same) ...
     const handleShip = async () => {
         if (!editingOrder) return;
         const displayId = editingOrder.orderId || editingOrder.id;
@@ -112,8 +126,22 @@ export default function AdminOrdersPage() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>All Orders ({orders.length})</h1>
-                <button onClick={fetchOrders} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }}>Refresh</button>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>All Orders ({filteredOrders.length})</h1>
+
+                <div style={{ display: 'flex', gap: '15px' }}>
+                    {/* SEARCH BAR */}
+                    <div style={{ position: 'relative' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
+                        <input
+                            type="text"
+                            placeholder="Search Order ID, Name, Phone..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ padding: '10px 10px 10px 35px', borderRadius: '6px', border: '1px solid #ddd', width: '300px' }}
+                        />
+                    </div>
+                    <button onClick={fetchOrders} style={{ padding: '8px 16px', background: '#fff', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer' }}>Refresh</button>
+                </div>
             </div>
 
             <div style={{ overflowX: 'auto', background: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
@@ -130,7 +158,7 @@ export default function AdminOrdersPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {orders.map((order) => (
+                        {filteredOrders.map((order) => (
                             <tr key={order.id} style={{ borderBottom: '1px solid #f3f4f6', fontSize: '13px' }}>
                                 <td style={tdStyle}>
                                     <div style={{ fontWeight: '600', color: '#111' }}>
@@ -209,10 +237,10 @@ export default function AdminOrdersPage() {
                                 </td>
                             </tr>
                         ))}
-                        {orders.length === 0 && (
+                        {filteredOrders.length === 0 && (
                             <tr>
                                 <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
-                                    No orders found.
+                                    No orders found matching your search.
                                 </td>
                             </tr>
                         )}

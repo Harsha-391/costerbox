@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { Search, ShoppingBag, User, Menu, X, Package, LogOut, ChevronDown } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, X, Package, LogOut, ChevronDown, Heart } from 'lucide-react';
 import '../styles/header.css';
 
 export default function Header() {
@@ -15,6 +16,8 @@ export default function Header() {
     const router = useRouter();
     const { user, logout } = useAuth();
     const { cartCount } = useCart();
+    const { wishlist } = useWishlist();
+    const wishlistCount = wishlist.length;
 
     // State for Mobile Menu, Search & Products Dropdown
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -110,6 +113,7 @@ export default function Header() {
                     <Link href="/shop" className="icon-link">Archive</Link>
 
                     {/* Search Bar Logic */}
+                    {/* SEARCH */}
                     <div className={`search-container ${searchOpen ? 'active' : ''}`}>
                         <input type="text" className="search-input" placeholder="Search..." />
                         <button className="icon-link search-trigger" onClick={() => setSearchOpen(!searchOpen)}>
@@ -117,6 +121,27 @@ export default function Header() {
                         </button>
                     </div>
 
+                    {/* WISHLIST */}
+                    <Link href="/wishlist" className="icon-link" title="Wishlist" style={{ position: 'relative' }}>
+                        <Heart size={20} />
+                        {wishlistCount > 0 && <span style={{
+                            position: 'absolute',
+                            top: '-5px',
+                            right: '-5px',
+                            background: '#c41e3a',
+                            color: 'white',
+                            fontSize: '10px',
+                            fontWeight: 'bold',
+                            borderRadius: '50%',
+                            width: '16px',
+                            height: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>{wishlistCount}</span>}
+                    </Link>
+
+                    {/* CART */}
                     <Link href="/cart" className="icon-link" title="Cart" style={{ position: 'relative' }}>
                         <ShoppingBag size={20} />
                         {cartCount > 0 && <span style={{

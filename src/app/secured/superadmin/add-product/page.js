@@ -34,7 +34,8 @@ function AddProductContent() {
         shippingInfo: '',
         careInfo: '',
         faqs: '',
-        sizeGuide: ''
+
+        sizeGuideImage: '' // CHANGED: from sizeGuide text to Image URL
     });
 
     // MEDIA & CATEGORY STATE
@@ -61,6 +62,10 @@ function AddProductContent() {
     const [newCat, setNewCat] = useState('');
     const [imageFiles, setImageFiles] = useState([]);
     const [previews, setPreviews] = useState([]);
+
+    // SIZE GUIDE IMAGE STATE
+    const [sizeGuideFile, setSizeGuideFile] = useState(null);
+    const [sizeGuidePreview, setSizeGuidePreview] = useState(null);
 
     // DRAG & DROP STATE
     const [dragIndex, setDragIndex] = useState(null);
@@ -102,6 +107,10 @@ function AddProductContent() {
                         seoTitle: data.seoTitle || '',
                         seoDesc: data.seoDesc || '',
                         seoHandle: data.seoHandle || '',
+
+                        // Ensure tags is ALWAYS a string for the input
+                        tags: Array.isArray(data.tags) ? data.tags.join(', ') : (data.tags || ''),
+
                         // Map new fields
                         sizes: (data.sizes || []).join(', '),
                         highlights: data.highlights || [],
@@ -109,7 +118,8 @@ function AddProductContent() {
                         shippingInfo: data.shippingInfo || '',
                         careInfo: data.careInfo || '',
                         faqs: data.faqs || '',
-                        sizeGuide: data.sizeGuide || ''
+
+                        sizeGuideImage: data.sizeGuideImage || '' // Load existing image
                     });
                     // If editing & seo fields were manually set, mark them as manual
                     if (data.seoTitle) setSeoManualTitle(true);
@@ -184,6 +194,15 @@ function AddProductContent() {
             const updatedPreviews = previews.filter((_, i) => i !== index);
             setImageFiles(updatedFiles);
             setPreviews(updatedPreviews);
+        }
+    };
+
+    // SIZE GUIDE HANDLE SELECT
+    const handleSizeGuideFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSizeGuideFile(file);
+            setSizeGuidePreview(URL.createObjectURL(file));
         }
     };
 
@@ -280,8 +299,25 @@ function AddProductContent() {
                 setUploading(false);
             }
 
+            // UPLOAD SIZE GUIDE IMAGE IF NEW FILE IS SELECTED
+            let finalSizeGuideImage = formData.sizeGuideImage;
+            if (sizeGuideFile) {
+                setUploading(true);
+                const sgRef = ref(storage, `size_guides/${Date.now()}_${sizeGuideFile.name}`);
+                await uploadBytes(sgRef, sizeGuideFile);
+                finalSizeGuideImage = await getDownloadURL(sgRef);
+                setUploading(false);
+            }
+
+            console.log("FINAL SIZE GUIDE SAVING:", finalSizeGuideImage); // DEBUG LOG
+
             // Parse tags string into array
-            const tagsArray = (formData.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+            let tagsArray = [];
+            if (Array.isArray(formData.tags)) {
+                tagsArray = formData.tags;
+            } else if (typeof formData.tags === 'string') {
+                tagsArray = formData.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+            }
             const sizesArray = (formData.sizes || '').split(',').map(s => s.trim()).filter(Boolean);
 
             const payload = {
@@ -295,6 +331,7 @@ function AddProductContent() {
                 seoTitle: formData.seoTitle,
                 seoDesc: formData.seoDesc,
                 seoHandle: formData.seoHandle,
+                sizeGuideImage: finalSizeGuideImage, // Save the URL
                 updatedAt: new Date()
             };
 
@@ -431,9 +468,92 @@ function AddProductContent() {
                             <ReactQuill theme="snow" value={formData.faqs} onChange={(val) => setFormData({ ...formData, faqs: val })} modules={quillModules} formats={quillFormats} placeholder="Product FAQs..." />
                         </div>
 
-                        <div className="form-group" style={{ marginTop: '20px' }}>
-                            <label>Size Guide (Optional override)</label>
-                            <ReactQuill theme="snow" value={formData.sizeGuide} onChange={(val) => setFormData({ ...formData, sizeGuide: val })} modules={quillModules} formats={quillFormats} placeholder="Custom size guide table..." />
+                        <div className="form-group" style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                            <label style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Size Guide Image</label>
+
+                            <div style={{
+                                border: '2px dashed #ccc',
+                                borderRadius: '8px',
+                                padding: '20px',
+                                textAlign: 'center',
+                                background: '#f9f9f9',
+                                position: 'relative'
+                            }}>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleSizeGuideFileSelect}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        opacity: 0,
+                                        cursor: 'pointer',
+                                        zIndex: 10
+                                    }}
+                                />
+
+                                {sizeGuidePreview || formData.sizeGuideImage ? (
+                                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                                        <img
+                                            src={sizeGuidePreview || formData.sizeGuideImage}
+                                            alt="Size Guide"
+                                            style={{ maxHeight: '200px', maxWidth: '100%', objectFit: 'contain', border: '1px solid #ddd' }}
+                                        />
+                                        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>Click to change image</p>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation(); // Stop click from triggering input
+                                                // We need to set z-index of input to -1 temporarily or handle this better
+                                                // Actually, simpler to just have a clear button outside the input area or overlay with higher z-index
+                                            }}
+                                            style={{
+                                                display: 'none' // Removing the delete button for now to simplify interaction, replacing works fine
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                        {/* Custom Close Button Overlay that actually works with z-index */}
+                                        <div
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setSizeGuideFile(null);
+                                                setSizeGuidePreview(null);
+                                                setFormData({ ...formData, sizeGuideImage: '' });
+                                            }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '-10px',
+                                                right: '-10px',
+                                                background: 'red',
+                                                color: 'white',
+                                                borderRadius: '50%',
+                                                width: '24px',
+                                                height: '24px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                zIndex: 20, // Higher than input
+                                                fontWeight: 'bold'
+                                            }}
+                                        >
+                                            ×
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '20px' }}>
+                                        <div style={{ fontSize: '30px', marginBottom: '10px' }}>🖼️</div>
+                                        <p style={{ margin: 0, fontWeight: '500', color: '#333' }}>Click to upload Size Chart Image</p>
+                                        <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#888' }}>Supports JPG, PNG, WEBP</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

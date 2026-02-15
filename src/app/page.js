@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { useWishlist } from '../context/WishlistContext';
+import { Heart } from 'lucide-react';
 import '@/styles/home.css';
 import HomeCustomServices from '@/components/HomeCustomServices';
 
@@ -17,6 +19,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   // ========= FETCH DATA FROM FIRESTORE =========
   useEffect(() => {
@@ -105,7 +108,7 @@ export default function HomePage() {
   const testimonials = [
     { text: "Thanks team, I have received the order. For sure. I am definitely going to recommend you guys for your quick service.", author: "Aanisah", location: "Spain" },
     { text: "I got my outfit and I'm just blown by how beautiful the outfit and packaging is. Amazing fit! Will definitely be ordering again very soon.", author: "Priya K.", location: "Mumbai" },
-    { text: "Thanks for the saree! Wore it for my pre wedding shoot. Loved it!! Thanks for the saree and on time delivery!", author: "Meera R.", location: "Bangalore" },
+
     { text: "Hi thank you, your products are very nice! I have shared the links with some friends too and love that you have plus sizes!", author: "Sarah M.", location: "London" },
   ];
 
@@ -134,7 +137,7 @@ export default function HomePage() {
     if (product.badge) tag = product.badge;
 
     return (
-      <Link href={`/shop/${product.id}`} className="pc-card">
+      <Link href={`/shop/${product.seoHandle || product.id}`} className="pc-card">
         <div className="pc-image-box">
           <img src={img1} alt={name} className="pc-img pc-img-primary" />
           {img2 && img2 !== img1 && <img src={img2} alt={name} className="pc-img pc-img-hover" />}
@@ -143,6 +146,39 @@ export default function HomePage() {
               {tag}
             </span>
           )}
+
+          {/* Wishlist Button Overlay */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleWishlist(product);
+            }}
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              background: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: '30px',
+              height: '30px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 10,
+              boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+            }}
+            title={isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+          >
+            <Heart
+              size={16}
+              fill={isInWishlist(product.id) ? "#e53935" : "none"}
+              color={isInWishlist(product.id) ? "#e53935" : "#1a1a1a"}
+            />
+          </button>
+
           <button className="pc-quick-add" onClick={(e) => { e.preventDefault(); }}>
             Quick View
           </button>
@@ -325,17 +361,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ 8. FEATURED IN ============ */}
-      <section className="section-featured">
-        <h2 className="section-title-center" style={{ fontSize: '1.3rem', marginBottom: '40px' }}>Featured In</h2>
-        <div className="featured-logos">
-          <div className="featured-logo">Vogue</div>
-          <div className="featured-logo">Elle</div>
-          <div className="featured-logo">Harper's Bazaar</div>
-          <div className="featured-logo">WedMeGood</div>
-          <div className="featured-logo">Khush Magazine</div>
-        </div>
-      </section>
 
       {/* ============ 9. TESTIMONIALS ============ */}
       <section className="section-testimonials">

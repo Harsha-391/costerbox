@@ -7,7 +7,8 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import ChatWindow from '../../components/ChatWindow';
 import Link from 'next/link';
-import { MessageCircle, ShoppingBag, X } from 'lucide-react';
+import { MessageCircle, ShoppingBag, X, Heart } from 'lucide-react';
+import { useWishlist } from '../../context/WishlistContext';
 import '../../styles/shop.css';
 
 function ShopPageContent() {
@@ -19,6 +20,7 @@ function ShopPageContent() {
     const [categories, setCategories] = useState([]);
     const [filter, setFilter] = useState(catFromUrl || 'All');
     const [loading, setLoading] = useState(true);
+    const { isInWishlist, toggleWishlist } = useWishlist();
 
     // Track which product is currently being discussed
     const [activeChatProduct, setActiveChatProduct] = useState(null);
@@ -145,10 +147,41 @@ function ShopPageContent() {
                         {filteredProducts.map(product => (
                             <div key={product.id} className="product-card">
 
-                                {/* 2. WRAP IMAGE IN LINK */}
-                                <Link href={`/shop/${product.id}`} style={{ display: 'block', cursor: 'pointer' }}>
-                                    <div className="img-box">
+                                <Link href={`/shop/${product.seoHandle || product.id}`} style={{ display: 'block', cursor: 'pointer' }}>
+                                    <div className="img-box" style={{ position: 'relative' }}>
                                         {product.badge && <span className="badge">{product.badge}</span>}
+
+                                        {/* Wishlist Button Overlay */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                toggleWishlist(product);
+                                            }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '10px',
+                                                right: '10px',
+                                                background: '#fff',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '30px',
+                                                height: '30px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                zIndex: 10,
+                                                boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                                            }}
+                                            title={isInWishlist(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
+                                        >
+                                            <Heart
+                                                size={16}
+                                                fill={isInWishlist(product.id) ? "#e53935" : "none"}
+                                                color={isInWishlist(product.id) ? "#e53935" : "#1a1a1a"}
+                                            />
+                                        </button>
 
                                         {/* IMAGE LOGIC */}
                                         {(() => {
@@ -174,7 +207,7 @@ function ShopPageContent() {
                                     <span className="p-region">{product.region}</span>
 
                                     {/* 3. WRAP TITLE IN LINK */}
-                                    <Link href={`/shop/${product.id}`} style={{ textDecoration: 'none' }}>
+                                    <Link href={`/shop/${product.seoHandle || product.id}`} style={{ textDecoration: 'none' }}>
                                         <h3 className="p-name">{product.name || product.title}</h3>
                                     </Link>
 

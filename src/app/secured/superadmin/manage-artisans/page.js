@@ -1,112 +1,366 @@
-/* src/app/secured/superadmin/manage-artisans/page.js */
 "use client";
 import React, { useState, useEffect } from 'react';
-import { db } from '../../../../lib/firebase'; 
-import { collection, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '../../../../lib/firebase';
+import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { Search, Edit, Eye, User, Phone, MapPin, Package, ShoppingBag, X, Check, Save } from 'lucide-react';
 
-export default function ArtisanChatPage() {
-  const [chats, setChats] = useState([]);
-  const [selectedChatId, setSelectedChatId] = useState(null);
-  const [adminMessage, setAdminMessage] = useState("");
+export default function ManageArtisansPage() {
+    const [artisans, setArtisans] = useState([]);
+    const [filteredArtisans, setFilteredArtisans] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortOption, setSortOption] = useState('newest'); // newest, oldest, name-asc, name-desc
 
-  // 1. Fetch All Active Chats
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, "chats"), (snapshot) => {
-        const chatsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setChats(chatsData);
-        if (chatsData.length > 0 && !selectedChatId) {
-            setSelectedChatId(chatsData[0].id); // Auto select first chat
+    // Modal States
+    const [selectedArtisan, setSelectedArtisan] = useState(null); // For Profile View
+    const [editingArtisan, setEditingArtisan] = useState(null); // For Edit View
+    const [stats, setStats] = useState({ products: 0, orders: 0 }); // Stats for selected artisan
+
+    // FETCH ARTISANS
+    useEffect(() => {
+        const fetchArtisans = async () => {
+            setLoading(true);
+            try {
+                // Assuming 'role' field identifies artisans in 'users' collection
+                // If you have a separate 'artisans' collection, change "users" to "artisans"
+                const q = query(collection(db, "users"), where("role", "==", "artisan"));
+                const snapshot = await getDocs(q);
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    // Ensure fields exist
+                    name: doc.data().name || 'Unknown Artisan',
+                    email: doc.data().email || 'No Email',
+                    phone: doc.data().phone || 'N/A',
+                    address: doc.data().address || 'N/A',
+                    joinedAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
+                }));
+                setArtisans(data);
+                setFilteredArtisans(data);
+            } catch (error) {
+                console.error("Error fetching artisans:", error);
+                // Fallback dummy data for UI testing if empty
+                if (artisans.length === 0) {
+                    // Keep empty or add mock if needed
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchArtisans();
+    }, []);
+
+    // FILTER & SORT
+    useEffect(() => {
+        let result = [...artisans];
+
+        // Search
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            result = result.filter(a =>
+                a.name.toLowerCase().includes(lower) ||
+                a.email.toLowerCase().includes(lower) ||
+                a.phone.includes(lower)
+            );
         }
-    });
-    return () => unsub();
-  }, []);
 
-  // 2. Identify the currently selected chat object
-  const activeChat = chats.find(c => c.id === selectedChatId);
+        // Sort
+        if (sortOption === 'newest') {
+            result.sort((a, b) => b.joinedAt - a.joinedAt);
+        } else if (sortOption === 'oldest') {
+            result.sort((a, b) => a.joinedAt - b.joinedAt);
+        } else if (sortOption === 'name-asc') {
+            result.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sortOption === 'name-desc') {
+            result.sort((a, b) => b.name.localeCompare(a.name));
+        }
 
-  // 3. Admin Intervention (Send Message)
-  const sendIntervention = async () => {
-    if (!adminMessage.trim()) return;
-    const chatRef = doc(db, "chats", selectedChatId);
-    
-    await updateDoc(chatRef, {
-        messages: arrayUnion({
-            sender: 'admin',
-            text: `[ADMIN ALERT]: ${adminMessage}`,
-            time: new Date().toLocaleTimeString()
-        })
-    });
-    setAdminMessage("");
-  };
+        setFilteredArtisans(result);
+    }, [searchTerm, sortOption, artisans]);
 
-  return (
-    <div style={{ display: 'flex', height: '85vh', gap: '20px' }}>
-      
-      {/* LEFT: List of Chats */}
-      <div style={{ width: '300px', background: '#fff', overflowY: 'auto' }}>
-         <div style={{ padding: '15px', fontWeight: 'bold', borderBottom: '1px solid #eee' }}>Active Negotiations</div>
-         {chats.map(chat => (
-             <div 
-                key={chat.id} 
-                onClick={() => setSelectedChatId(chat.id)}
-                style={{ 
-                    padding: '15px', 
-                    borderBottom: '1px solid #f5f5f5', 
-                    background: selectedChatId === chat.id ? '#e3f2fd' : 'transparent',
-                    cursor: 'pointer' 
-                }}
-             >
-                 <div style={{ fontWeight: 'bold', fontSize: '14px' }}>Order: {chat.id}</div>
-                 <div style={{ fontSize: '12px', color: '#666' }}>Last msg: {chat.messages ? chat.messages[chat.messages.length - 1]?.text.substring(0, 20) : "No msgs"}...</div>
-             </div>
-         ))}
-      </div>
+    // FETCH STATS (When viewing profile)
+    const loadArtisanStats = async (artisanId) => {
+        // Mock stats or real queries
+        // 1. Count products
+        try {
+            // Check if products have 'artisanId' or 'vendor' field matching artisan name/id
+            // This depends on schema. I'll search by vendor name as a fallback or artisanId
+            // Strategy: Try artisanId first
+            let prodQ = query(collection(db, "products"), where("artisanId", "==", artisanId));
+            let prodSnap = await getDocs(prodQ);
 
-      {/* RIGHT: Chat Window */}
-      <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column' }}>
-        {activeChat ? (
-            <>
-                <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#fafafa' }}>
-                    {activeChat.messages && activeChat.messages.map((msg, i) => (
-                        <div key={i} style={{ 
-                            display: 'flex', 
-                            justifyContent: msg.sender === 'customer' ? 'flex-start' : (msg.sender === 'admin' ? 'center' : 'flex-end'),
-                            marginBottom: '10px' 
-                        }}>
-                            <div style={{ 
-                                padding: '10px 15px', 
-                                borderRadius: '10px', 
-                                background: msg.sender === 'customer' ? '#fff' : (msg.sender === 'admin' ? '#ffebee' : '#333'),
-                                color: msg.sender === 'customer' ? '#000' : (msg.sender === 'admin' ? '#c62828' : '#fff'),
-                                border: msg.sender === 'customer' ? '1px solid #ddd' : 'none',
-                                maxWidth: '70%',
-                                fontSize: '14px'
-                            }}>
-                                {msg.sender === 'admin' && <strong>👮 SUPERVISOR: </strong>}
-                                {msg.text}
-                            </div>
-                        </div>
-                    ))}
+            // If 0, maybe try vendor name? (Optional, skipping for now to keep it simple)
+
+            // 2. Count orders (This might be complex, verify schema later)
+            // For now, let's assume specific order query or placeholder
+            const ordersCount = 0; // Placeholder until order schema verified
+
+            setStats({
+                products: prodSnap.size,
+                orders: ordersCount
+            });
+        } catch (e) {
+            console.error("Error loading stats", e);
+            setStats({ products: 0, orders: 0 });
+        }
+    };
+
+    // HANDLERS
+    const handleViewProfile = (artisan) => {
+        setSelectedArtisan(artisan);
+        loadArtisanStats(artisan.id);
+    };
+
+    const handleEdit = (artisan) => {
+        setEditingArtisan({ ...artisan });
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingArtisan) return;
+        try {
+            const docRef = doc(db, "users", editingArtisan.id);
+            await updateDoc(docRef, {
+                phone: editingArtisan.phone,
+                address: editingArtisan.address
+            });
+
+            // Update local state
+            setArtisans(prev => prev.map(a => a.id === editingArtisan.id ? editingArtisan : a));
+            setEditingArtisan(null);
+            alert("Artisan details updated!");
+        } catch (e) {
+            console.error("Error updating artisan:", e);
+            alert("Failed to update.");
+        }
+    };
+
+    return (
+        <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto' }}>
+
+            {/* HEADER & ACTIONS */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <div>
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '5px' }}>Manage Artisans</h1>
+                    <p style={{ color: '#666' }}>Total Artisans: {artisans.length}</p>
                 </div>
-                
-                {/* Intervention Box */}
-                <div style={{ padding: '15px', borderTop: '1px solid #eee', display: 'flex', gap: '10px' }}>
-                    <input 
-                        value={adminMessage}
-                        onChange={(e) => setAdminMessage(e.target.value)}
-                        placeholder="Type an intervention message..." 
-                        style={{ flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+            </div>
+
+            {/* FILTERS */}
+            <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                    <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
+                    <input
+                        type="text"
+                        placeholder="Search by name, email, phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #ddd', borderRadius: '6px' }}
                     />
-                    <button onClick={sendIntervention} style={{ padding: '10px 20px', background: '#d32f2f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                        Send
-                    </button>
                 </div>
-            </>
-        ) : (
-            <div style={{ padding: '20px' }}>Select a chat to monitor</div>
-        )}
-      </div>
+                <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', minWidth: '150px' }}
+                >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                </select>
+            </div>
 
-    </div>
-  );
+            {/* ARTISANS TABLE */}
+            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                        <tr style={{ background: '#f9fafb', borderBottom: '1px solid #eee' }}>
+                            <th style={{ padding: '15px', fontSize: '13px', fontWeight: '600', color: '#444' }}>ARTISAN</th>
+                            <th style={{ padding: '15px', fontSize: '13px', fontWeight: '600', color: '#444' }}>CONTACT</th>
+                            <th style={{ padding: '15px', fontSize: '13px', fontWeight: '600', color: '#444' }}>LOCATION</th>
+                            <th style={{ padding: '15px', fontSize: '13px', fontWeight: '600', color: '#444' }}>JOINED</th>
+                            <th style={{ padding: '15px', fontSize: '13px', fontWeight: '600', color: '#444', textAlign: 'right' }}>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loading ? (
+                            <tr><td colSpan="5" style={{ padding: '30px', textAlign: 'center' }}>Loading artisans...</td></tr>
+                        ) : filteredArtisans.length === 0 ? (
+                            <tr><td colSpan="5" style={{ padding: '30px', textAlign: 'center' }}>No artisans found matching your search.</td></tr>
+                        ) : (
+                            filteredArtisans.map(artisan => (
+                                <tr key={artisan.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                                    <td style={{ padding: '15px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                                {artisan.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: '500' }}>{artisan.name}</div>
+                                                <div style={{ fontSize: '12px', color: '#888' }}>ID: {artisan.id.substring(0, 6)}...</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '15px' }}>
+                                        <div style={{ fontSize: '13px' }}>{artisan.email}</div>
+                                        <div style={{ fontSize: '12px', color: '#666' }}>{artisan.phone}</div>
+                                    </td>
+                                    <td style={{ padding: '15px', fontSize: '13px', color: '#555' }}>
+                                        {artisan.address || 'N/A'}
+                                    </td>
+                                    <td style={{ padding: '15px', fontSize: '13px', color: '#555' }}>
+                                        {artisan.joinedAt.toLocaleDateString()}
+                                    </td>
+                                    <td style={{ padding: '15px', textAlign: 'right' }}>
+                                        <button onClick={() => handleViewProfile(artisan)} style={{ padding: '6px', marginRight: '5px', background: 'none', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }} title="View Profile">
+                                            <Eye size={16} color="#444" />
+                                        </button>
+                                        <button onClick={() => handleEdit(artisan)} style={{ padding: '6px', background: 'none', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }} title="Edit Details">
+                                            <Edit size={16} color="#0066cc" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* === EDIT MODAL === */}
+            {editingArtisan && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: '#fff', width: '400px', borderRadius: '8px', padding: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Edit Artisan</h2>
+                            <button onClick={() => setEditingArtisan(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                        </div>
+
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>Phone Number</label>
+                            <input
+                                value={editingArtisan.phone}
+                                onChange={(e) => setEditingArtisan({ ...editingArtisan, phone: e.target.value })}
+                                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>Address</label>
+                            <textarea
+                                value={editingArtisan.address}
+                                onChange={(e) => setEditingArtisan({ ...editingArtisan, address: e.target.value })}
+                                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', minHeight: '80px' }}
+                            />
+                        </div>
+
+                        <button onClick={handleSaveEdit} style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === IDENTITY CARD MODAL (PROFILE) === */}
+            {selectedArtisan && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(3px)' }}>
+                    <div style={{ background: '#fff', width: '500px', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+
+                        {/* ID HEADER */}
+                        <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)', color: '#fff', padding: '25px', textAlign: 'center', position: 'relative' }}>
+                            <button onClick={() => setSelectedArtisan(null)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '30px', height: '30px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={16} />
+                            </button>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#fff', margin: '0 auto 15px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold', color: '#1a1a1a', border: '4px solid rgba(255,255,255,0.2)' }}>
+                                {selectedArtisan.name.charAt(0).toUpperCase()}
+                            </div>
+                            <h2 style={{ margin: 0, fontSize: '22px' }}>{selectedArtisan.name}</h2>
+                            <span style={{ display: 'inline-block', marginTop: '5px', padding: '3px 10px', background: 'rgba(255,255,255,0.2)', borderRadius: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Verified Artisan
+                            </span>
+                        </div>
+
+                        {/* ID BODY */}
+                        <div style={{ padding: '25px' }}>
+
+                            {/* Stats Grid */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '25px' }}>
+                                <div style={{ background: '#f9fafb', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #eee' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a' }}>{stats.products}</div>
+                                    <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase' }}>Total Products</div>
+                                </div>
+                                <div style={{ background: '#f9fafb', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #eee' }}>
+                                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a' }}>{stats.orders}</div>
+                                    <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase' }}>Total Orders</div>
+                                </div>
+                            </div>
+
+                            {/* Details List */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', background: '#f5f5f5', borderRadius: '50%' }}>
+                                        <span style={{ color: '#888' }}><User size={16} /></span>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Full Name</div>
+                                        <div style={{ fontWeight: '500' }}>{selectedArtisan.name}</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', background: '#f5f5f5', borderRadius: '50%' }}>
+                                        <span style={{ color: '#888' }}><Check size={16} /></span>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Email Address</div>
+                                        <div style={{ fontWeight: '500' }}>{selectedArtisan.email}</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', background: '#f5f5f5', borderRadius: '50%' }}>
+                                        <span style={{ color: '#888' }}><Phone size={16} /></span>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Phone Number</div>
+                                        <div style={{ fontWeight: '500' }}>{selectedArtisan.phone}</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', background: '#f5f5f5', borderRadius: '50%' }}>
+                                        <span style={{ color: '#888' }}><MapPin size={16} /></span>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Address</div>
+                                        <div style={{ fontWeight: '500' }}>{selectedArtisan.address || 'No address provided'}</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', background: '#f5f5f5', borderRadius: '50%' }}>
+                                        <span style={{ color: '#888' }}><ShoppingBag size={16} /></span>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Joined On</div>
+                                        <div style={{ fontWeight: '500' }}>{selectedArtisan.joinedAt.toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer Actions */}
+                            <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                                <button
+                                    onClick={() => {
+                                        setEditingArtisan(selectedArtisan);
+                                        // setSelectedArtisan(null); // Keep ID card open OR close it, usually better to close profile when opening edit.
+                                        setSelectedArtisan(null);
+                                    }}
+                                    style={{ padding: '10px 20px', background: '#00af50', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                >
+                                    <Edit size={16} /> Edit Profile
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
 }
