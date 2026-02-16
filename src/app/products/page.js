@@ -129,7 +129,7 @@ function ProductsPageContent() {
                 <main className="main-gallery">
                     <div className="gallery-header">
                         <h1>{searchTerm ? `Search Results for "${searchTerm}"` : "Products"}</h1>
-                        <p>{searchTerm ? `${filteredProducts.length} items found` : "Shop our curated collection. Direct shipping, no customization wait."}</p>
+                        <p>{searchTerm ? `${filteredProducts.length} items found` : "Products are ready to ship, customization available as per your need."}</p>
                     </div>
 
                     <div className="products-grid">

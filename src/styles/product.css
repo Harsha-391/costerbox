@@ -349,9 +349,9 @@ body {
     color: #333;
     width: 100%;
     max-width: 100%;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     /* Breaks long words/URLs at any point if line is full */
-    word-break: break-word;
+    word-break: normal;
     word-wrap: break-word;
 }
 
