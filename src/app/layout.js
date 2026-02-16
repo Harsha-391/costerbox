@@ -6,8 +6,13 @@ import Footer from '../components/Footer';
 import PromoStrip from '../components/PromoStrip';
 
 export const metadata = {
-  title: 'Costerbox',
-  description: 'Tribal Art, Reimagined.',
+  title: 'Costerbox | Handcrafted Artistry',
+  description: 'Celebrating Handcrafted Artistry & Timeless Design',
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
 };
 
 import { CartProvider } from '../context/CartContext';
