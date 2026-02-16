@@ -63,10 +63,19 @@ export default function BespokePage() {
 
             <div className="cp-action">
                 <h2>Designed By You, Crafted By Us</h2>
-                <p>Start a conversation with our bespoke team today.</p>
-                <button className="cp-start-btn" onClick={handleStart}>
-                    <PenTool size={18} /> Start Designing
+                <p>Start a conversation with our bespoke team today via WhatsApp.</p>
+                <button
+                    className="cp-start-btn"
+                    onClick={() => window.open('https://wa.me/916377515507', '_blank')}
+                    style={{ background: '#25D366', color: '#fff', border: 'none' }}
+                >
+                    <MessageCircle size={18} /> Chat on WhatsApp
                 </button>
+                <div style={{ marginTop: '15px' }}>
+                    <button className="cp-start-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed', background: '#eee' }}>
+                        <PenTool size={18} /> Design Tool (Coming Soon)
+                    </button>
+                </div>
             </div>
 
             {/* CHAT MODAL */}

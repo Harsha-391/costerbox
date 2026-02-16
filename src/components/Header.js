@@ -184,7 +184,7 @@ export default function Header() {
 
                 {/* 4. MOBILE RIGHT SECTION */}
                 <div className="mobile-right-section">
-                    <div className="mobile-search-trigger"><Search size={20} /></div>
+                    <div className="mobile-search-trigger" onClick={() => setSearchOpen(!searchOpen)}><Search size={20} /></div>
                     <Link href="/cart" className="mobile-cart-link" style={{ position: 'relative' }}>
                         <ShoppingBag size={20} />
                         {cartCount > 0 && <span style={{
@@ -317,6 +317,22 @@ export default function Header() {
                         <Link href="/secured/login" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Login</Link>
                     )}
                 </div>
+            </div>
+
+            {/* --- MOBILE SEARCH BAR --- */}
+            <div className={`mobile-search-bar ${searchOpen ? 'open' : ''}`}>
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.querySelector('input');
+                    if (input && input.value.trim()) {
+                        router.push(`/products?search=${encodeURIComponent(input.value.trim())}`);
+                        setSearchOpen(false);
+                    }
+                }}>
+                    <input type="text" placeholder="Search products..." />
+                    <button type="button" onClick={() => setSearchOpen(false)} style={{ marginRight: '10px' }}><X size={18} /></button>
+                    <button type="submit"><Search size={18} /></button>
+                </form>
             </div>
 
             {/* OVERLAY */}

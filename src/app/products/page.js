@@ -63,12 +63,22 @@ function ProductsPageContent() {
 
         // 2. Category Filter
         if (filter !== 'All') {
-            const pCat = p.category || "";
-            const pRegion = p.region || "";
-            const pTags = Array.isArray(p.tags) ? p.tags : [];
+            // Normalize: Remove trailing 's', trim whitespace to prevent mismatches
+            const safeFilter = String(filter).trim().toLowerCase();
+            const normFilter = safeFilter.replace(/s$/, '');
 
-            // Check exact category, region, or tag match
-            const matchesCategory = pCat === filter || pRegion === filter || pTags.includes(filter.toLowerCase());
+            const pCat = String(p.category || "").trim().toLowerCase();
+            const pRegion = String(p.region || "").trim().toLowerCase();
+            const pTags = (Array.isArray(p.tags) ? p.tags : []).map(t => String(t).trim().toLowerCase());
+
+            const matchesCategory =
+                pCat === safeFilter ||
+                pCat.replace(/s$/, '') === normFilter ||
+                pRegion === safeFilter ||
+                pRegion.replace(/s$/, '') === normFilter ||
+                pTags.includes(safeFilter) ||
+                pTags.some(t => t.replace(/s$/, '') === normFilter);
+
             if (!matchesCategory) return false;
         }
 

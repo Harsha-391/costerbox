@@ -62,10 +62,19 @@ export default function UpcyclePage() {
 
             <div className="cp-action">
                 <h2>Ready to Reimagine?</h2>
-                <p>Start a conversation with our design team today. No commitment until you approve the design.</p>
-                <button className="cp-start-btn" onClick={handleStart}>
-                    <Sparkles size={18} /> Start Consultation
+                <p>Chat with our design team via WhatsApp.</p>
+                <button
+                    className="cp-start-btn"
+                    onClick={() => window.open('https://wa.me/916377515507', '_blank')}
+                    style={{ background: '#25D366', color: '#fff', border: 'none' }}
+                >
+                    <MessageCircle size={18} /> Chat on WhatsApp
                 </button>
+                <div style={{ marginTop: '15px' }}>
+                    <button className="cp-start-btn" disabled style={{ opacity: 0.6, cursor: 'not-allowed', background: '#eee' }}>
+                        <Sparkles size={18} /> Consultation (Coming Soon)
+                    </button>
+                </div>
             </div>
 
             {/* CHAT MODAL */}

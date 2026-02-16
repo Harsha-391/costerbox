@@ -211,13 +211,30 @@ export default function HomePage() {
 
   // ========= CATEGORY IMAGE (use first product image from that category) =========
   const getCategoryImage = (catName) => {
-    const product = allProducts.find(p => p.category === catName && (p.featuredImage || (p.media && p.media.length > 0)));
+    const safeCatName = String(catName).trim().toLowerCase();
+    const normCatName = safeCatName.replace(/s$/, '');
+
+    const product = allProducts.find(p => {
+      const pCat = String(p.category || "").trim().toLowerCase();
+      const matches = pCat === safeCatName || pCat.replace(/s$/, '') === normCatName;
+      const isActive = String(p.status || "").toLowerCase() === 'active';
+      return matches && isActive && (p.featuredImage || (p.media && p.media.length > 0));
+    });
+
     if (product) return product.featuredImage || product.media[0];
     return 'https://via.placeholder.com/400x600?text=' + encodeURIComponent(catName);
   };
 
   const getCategoryCount = (catName) => {
-    return allProducts.filter(p => p.category === catName && p.status === 'Active').length;
+    const safeCatName = String(catName).trim().toLowerCase();
+    const normCatName = safeCatName.replace(/s$/, '');
+
+    return allProducts.filter(p => {
+      const pCat = String(p.category || "").trim().toLowerCase();
+      const matches = pCat === safeCatName || pCat.replace(/s$/, '') === normCatName;
+      const isActive = String(p.status || "").toLowerCase() === 'active';
+      return matches && isActive;
+    }).length;
   };
 
   // ========= RENDER =========
