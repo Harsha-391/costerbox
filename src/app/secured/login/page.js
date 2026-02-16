@@ -67,7 +67,13 @@ export default function LoginPage() {
 
     } catch (err) {
       console.error(err);
-      setError('Google Sign-In failed. Please try again.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in cancelled.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized. Please add costerbox.in to Firebase Console > Auth > Settings.');
+      } else {
+        setError(`Google Sign-In failed: ${err.message || 'Please try again.'}`);
+      }
     } finally {
       setLoading(false);
     }

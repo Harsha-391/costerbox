@@ -930,10 +930,15 @@
   .hero-center,
   .hero-left,
   .hero-right {
-    left: 0;
-    right: auto;
-    text-align: left;
-    transform: translateY(-50%);
+    left: 0 !important;
+    right: auto !important;
+    text-align: center;
+    /* Center on mobile usually looks better, but user wants responsive */
+    transform: translateY(-50%) translateX(0) !important;
+    /* Force reset X */
+    width: 100%;
+    padding: 0 20px;
+    /* Reduced padding */
   }
 
   .section-about {
