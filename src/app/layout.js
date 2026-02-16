@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
           <WishlistProvider>
             <CartProvider>
               {/* 0. Promo Strip — above header */}
-              <PromoStrip />
+
 
               {/* 1. Header is now global */}
               <Header />
