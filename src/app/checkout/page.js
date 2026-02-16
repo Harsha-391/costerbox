@@ -10,6 +10,12 @@ import { Lock, CreditCard, MapPin } from "lucide-react";
 import "../../styles/checkout.css";
 import { generateInvoicePDF } from "../../utils/generateInvoice"; // Import PDF Generator
 
+const safePrice = (p) => {
+    if (!p) return 0;
+    const clean = String(p).replace(/[^0-9.]/g, '');
+    return Number(clean) || 0;
+};
+
 function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -44,7 +50,7 @@ function CheckoutContent() {
                             ...data,
                             selectedSize: directSize || (data.sizes?.[0]) || "Standard",
                             quantity: 1,
-                            price: Number(data.price) // Ensure number
+                            price: safePrice(data.price) // Ensure number
                         };
                         setItemsToCheckout([singleItem]);
                     } else {
@@ -58,13 +64,12 @@ function CheckoutContent() {
                 // === MODE B: CART CHECKOUT ===
                 if (cartItems.length === 0) {
                     // If cart is empty and no direct buy, redirect
-                    // Check if we just mounted; maybe wait a tick? 
-                    // Actually CartContext loads from localstorage pretty fast.
-                    // We can show "Your cart is empty" instead of redirecting immediately if preferred,
-                    // but redirecting to cart page seems appropriate.
-                    // setCheck check inside render or effect?
                 }
-                setItemsToCheckout(cartItems);
+                // Sanitize items from cart
+                setItemsToCheckout(cartItems.map(item => ({
+                    ...item,
+                    price: safePrice(item.price)
+                })));
             }
 
             // Prefill User Data
@@ -93,7 +98,7 @@ function CheckoutContent() {
 
         itemsToCheckout.forEach(item => {
             // Clean price logic
-            const rawPrice = Number(item.price);
+            const rawPrice = safePrice(item.price);
             const itemTotal = rawPrice * item.quantity;
 
             // Custom logic: 70% Advance
@@ -156,17 +161,20 @@ function CheckoutContent() {
                             userEmail: user?.email || "guest@example.com",
 
                             // UPDATED: Store Items Array
-                            items: itemsToCheckout.map(item => ({
-                                id: item.id,
-                                name: item.name || item.title || "Unnamed",
-                                price: Number(item.price),
-                                quantity: item.quantity,
-                                selectedSize: item.selectedSize || "",
-                                image: item.featuredImage || item.media?.[0] || "/placeholder.jpg",
-                                isCustomizable: !!item.isCustomizable,
-                                // Calculate specific amounts per item for record
-                                amountPaid: item.isCustomizable ? Math.ceil(Number(item.price) * item.quantity * 0.70) : (Number(item.price) * item.quantity)
-                            })),
+                            items: itemsToCheckout.map(item => {
+                                const p = safePrice(item.price);
+                                return {
+                                    id: item.id || "unknown_item",
+                                    name: item.name || item.title || "Unnamed",
+                                    price: p,
+                                    quantity: item.quantity,
+                                    selectedSize: item.selectedSize || "",
+                                    image: item.featuredImage || item.media?.[0] || "/placeholder.jpg",
+                                    isCustomizable: !!item.isCustomizable,
+                                    // Calculate specific amounts per item for record
+                                    amountPaid: item.isCustomizable ? Math.ceil(p * item.quantity * 0.70) : (p * item.quantity)
+                                };
+                            }),
 
                             shipping: { ...formData },
 
@@ -203,16 +211,19 @@ function CheckoutContent() {
 
                         // === GENERATE INVOICE ===
                         // Generate the bill immediately for the user
-                        // We use a safe local object because 'createdAt' is serverTimestamp() which is not a date locally yet.
-                        // We can just use new Date() for the PDF.
-                        generateInvoicePDF({ ...safePayload, createdAt: { seconds: Date.now() / 1000 } });
+                        try {
+                            generateInvoicePDF({ ...safePayload, createdAt: { seconds: Date.now() / 1000 } });
+                            alert("Order Placed Successfully! Your Invoice is downloading...");
+                        } catch (pdfError) {
+                            console.error("Invoice generation failed:", pdfError);
+                            alert("Order Placed Successfully! (Invoice download failed, please check your orders)");
+                        }
 
-                        alert("Order Placed Successfully! Your Invoice is downloading...");
                         router.push("/orders");
 
                     } catch (err) {
                         console.error("Error saving order:", err);
-                        alert("Payment successful but order save failed. Contact support.");
+                        alert(`Payment successful but order save failed: ${err.message}. Please contact support with your payment confirmation.`);
                     }
                     // ...
                 },

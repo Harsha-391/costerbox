@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../../lib/firebase';
-import { Package, Truck, CheckCircle, Clock, MapPin, ExternalLink, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, MapPin, ExternalLink, MessageCircle, AlertTriangle, FileText } from 'lucide-react';
+import { generateInvoicePDF } from '../../../../utils/generateInvoice';
 
 import { Search } from 'lucide-react'; // Import Icon
 
@@ -234,6 +235,19 @@ export default function AdminOrdersPage() {
                                             {order.isFlagged ? 'Review Issue' : 'Chat'}
                                         </a>
                                     )}
+
+                                    <button
+                                        onClick={() => generateInvoicePDF(order)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                                            padding: '6px 10px', marginTop: '5px',
+                                            color: '#555', border: '1px solid #ddd', borderRadius: '6px',
+                                            background: '#fff', cursor: 'pointer', width: '100%', fontSize: '12px'
+                                        }}
+                                        title="Download Tax Invoice"
+                                    >
+                                        <FileText size={14} /> Invoice
+                                    </button>
                                 </td>
                             </tr>
                         ))}

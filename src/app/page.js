@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { db } from '../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useWishlist } from '../context/WishlistContext';
@@ -139,8 +140,22 @@ export default function HomePage() {
     return (
       <Link href={`/shop/${product.seoHandle || product.id}`} className="pc-card">
         <div className="pc-image-box">
-          <img src={img1} alt={name} className="pc-img pc-img-primary" />
-          {img2 && img2 !== img1 && <img src={img2} alt={name} className="pc-img pc-img-hover" />}
+          <Image
+            src={img1}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 50vw, 25vw"
+            className="pc-img pc-img-primary"
+          />
+          {img2 && img2 !== img1 && (
+            <Image
+              src={img2}
+              alt={name}
+              fill
+              sizes="(max-width: 768px) 50vw, 25vw"
+              className="pc-img pc-img-hover"
+            />
+          )}
           {tag && (
             <span className={`pc-tag ${tag === 'Sale' ? 'pc-tag-sale' : tag === 'Bestseller' ? 'pc-tag-best' : ''}`}>
               {tag}
@@ -332,7 +347,13 @@ export default function HomePage() {
               {categories.map((cat) => (
                 <Link href={`/products?cat=${encodeURIComponent(cat.name)}`} key={cat.id} className="cat-round-item">
                   <div className="cat-round-img-wrap">
-                    <img src={getCategoryImage(cat.name)} alt={cat.name} />
+                    <Image
+                      src={getCategoryImage(cat.name)}
+                      alt={cat.name}
+                      fill
+                      sizes="140px"
+                      style={{ objectFit: 'cover' }}
+                    />
                   </div>
                   <h3 className="cat-round-name">{cat.name}</h3>
                   <span className="cat-round-count">{getCategoryCount(cat.name)} Items</span>
@@ -345,8 +366,14 @@ export default function HomePage() {
 
       {/* ============ 7. ABOUT US ============ */}
       <section className="section-about">
-        <div className="about-image-side">
-          <img src="/img14.jpg" alt="Our Story" />
+        <div className="about-image-side" style={{ position: 'relative' }}>
+          <Image
+            src="/img14.jpg"
+            alt="Our Story"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            style={{ objectFit: 'cover' }}
+          />
         </div>
         <div className="about-text-side">
           <span className="about-label">About Us</span>

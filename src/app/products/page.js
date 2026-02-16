@@ -6,6 +6,7 @@ import { db } from '../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingBag, Heart } from 'lucide-react';
 import { useWishlist } from '../../context/WishlistContext';
 import '../../styles/shop.css';
@@ -179,10 +180,13 @@ function ProductsPageContent() {
                                                 finalImage = 'https://via.placeholder.com/400x500?text=No+Image';
                                             }
                                             return (
-                                                <img
+                                                <Image
                                                     src={finalImage}
                                                     alt={product.title || product.name || 'Product'}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    fill
+                                                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                                                    style={{ objectFit: 'cover' }}
+                                                    className="product-img"
                                                 />
                                             );
                                         })()}

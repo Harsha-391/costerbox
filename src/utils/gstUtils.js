@@ -3,28 +3,23 @@ export const calculateGST = (product) => {
     // Categories based on name or type
     const name = (product.name || product.title || "").toLowerCase();
     let hsn = "9703"; // Default: Hand Embroidery Hoops/Handicraft
-    let gstRate = 0.12; // Default 12%
+    let gstRate = 0.05; // Default 5% (Updated per GST Reform)
 
-    if (name.includes("tote") || name.includes("bag")) {
+    if (name.includes("hoop")) {
+        hsn = "9703";
+        gstRate = 0.18; // Hoops are 18%
+    } else if (name.includes("tote") || name.includes("bag")) {
         hsn = "4202";
-        gstRate = 0.12;
+        gstRate = 0.05;
     } else if (name.includes("diary") || name.includes("journal") || name.includes("notebook")) {
         hsn = "4820";
-        gstRate = 0.12;
+        gstRate = 0.05;
     } else if (name.includes("t-shirt") || name.includes("tshirt") || name.includes("tee")) {
         hsn = "6109";
-        // Check price slab
-        if (product.price > 1000) {
-            gstRate = 0.12;
-        } else {
-            gstRate = 0.05;
-        }
+        gstRate = 0.05;
     } else if (name.includes("gamcha") || name.includes("towel")) {
         hsn = "6302";
         gstRate = 0.05;
-    } else if (name.includes("hoop")) {
-        hsn = "9703";
-        gstRate = 0.12;
     }
 
     // 2. Reverse Calculate Tax

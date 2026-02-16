@@ -23,7 +23,9 @@ export default function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [productsOpen, setProductsOpen] = useState(false);
-    const [categories, setCategories] = useState([]);
+    const [mobileProductsOpen, setMobileProductsOpen] = useState(false); // Isolated mobile state
+    // Initialize with default categories to ensure menu is never empty
+    const [categories, setCategories] = useState(['Coasters', 'Notebooks', 'Tote Bags', 'Placemats']);
     const dropdownRef = useRef(null);
 
     // Fetch categories from Firestore
@@ -32,7 +34,10 @@ export default function Header() {
             try {
                 const catSnap = await getDocs(collection(db, 'categories'));
                 const cats = catSnap.docs.map(d => d.data().name).filter(Boolean);
-                setCategories(cats);
+                // Only update if we successfully fetched categories
+                if (cats.length > 0) {
+                    setCategories(cats);
+                }
             } catch (err) {
                 console.error('Error fetching categories:', err);
             }
@@ -40,7 +45,7 @@ export default function Header() {
         fetchCategories();
     }, []);
 
-    // Close dropdown when clicking outside
+    // Close desktop dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -57,7 +62,7 @@ export default function Header() {
         setMobileMenuOpen(false);
     };
 
-    // Hide Header on Admin/Secured pages (except Login) — MUST be after all hooks
+    // Hide Header on Admin/Secured pages (except Login)
     if (pathname.startsWith('/secured') && pathname !== '/secured/login') {
         return null;
     }
@@ -93,9 +98,7 @@ export default function Header() {
                                 <Link href="/products" className="nav-dropdown-item" onClick={() => setProductsOpen(false)}>
                                     All Products
                                 </Link>
-                                {categories.length > 0 && (
-                                    <div className="nav-dropdown-divider" />
-                                )}
+                                {categories.length > 0 && <div className="nav-dropdown-divider" />}
                                 {categories.map((cat, i) => (
                                     <Link
                                         href={`/products?cat=${encodeURIComponent(cat)}`}
@@ -113,8 +116,6 @@ export default function Header() {
                     <Link href="/shop" className="icon-link">Archive</Link>
 
                     {/* Search Bar Logic */}
-                    {/* SEARCH */}
-                    {/* SEARCH */}
                     <div className={`search-container ${searchOpen ? 'active' : ''}`}>
                         <form onSubmit={(e) => {
                             e.preventDefault();
@@ -134,12 +135,7 @@ export default function Header() {
                                 autoComplete="off"
                             />
                             <button type="button" className="icon-link search-trigger" onClick={() => {
-                                // If closing, just close. If opening, focus?
                                 if (searchOpen) {
-                                    // logic to submit if clicked again? Or just toggle?
-                                    // User usually expects toggle or submit. Let's make icon submit if text exists?
-                                    // For now, toggle behavior is requested, but let's be smart.
-                                    // If text exists, submit. Else toggle.
                                     const input = document.querySelector('.search-input');
                                     if (input && input.value.trim()) {
                                         router.push(`/products?search=${encodeURIComponent(input.value.trim())}`);
@@ -156,88 +152,46 @@ export default function Header() {
                         </form>
                     </div>
 
-                    {/* WISHLIST */}
                     <Link href="/wishlist" className="icon-link" title="Wishlist" style={{ position: 'relative' }}>
                         <Heart size={20} />
                         {wishlistCount > 0 && <span style={{
-                            position: 'absolute',
-                            top: '-5px',
-                            right: '-5px',
-                            background: '#c41e3a',
-                            color: 'white',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            borderRadius: '50%',
-                            width: '16px',
-                            height: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            position: 'absolute', top: '-5px', right: '-5px',
+                            background: '#c41e3a', color: 'white', fontSize: '10px',
+                            fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>{wishlistCount}</span>}
                     </Link>
 
-                    {/* CART */}
                     <Link href="/cart" className="icon-link" title="Cart" style={{ position: 'relative' }}>
                         <ShoppingBag size={20} />
                         {cartCount > 0 && <span style={{
-                            position: 'absolute',
-                            top: '-5px',
-                            right: '-5px',
-                            background: '#c41e3a',
-                            color: 'white',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            borderRadius: '50%',
-                            width: '16px',
-                            height: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            position: 'absolute', top: '-5px', right: '-5px',
+                            background: '#c41e3a', color: 'white', fontSize: '10px',
+                            fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>{cartCount}</span>}
                     </Link>
 
-                    {/* DYNAMIC USER SECTION */}
                     {user ? (
                         <>
-                            <Link href="/orders" className="icon-link" title="My Orders">
-                                <Package size={20} />
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="icon-link"
-                                title="Logout"
-                            >
-                                <LogOut size={20} />
-                            </button>
+                            <Link href="/orders" className="icon-link" title="My Orders"><Package size={20} /></Link>
+                            <button onClick={handleLogout} className="icon-link" title="Logout"><LogOut size={20} /></button>
                         </>
                     ) : (
-                        <Link href="/secured/login" className="icon-link" title="Login">
-                            <User size={20} />
-                        </Link>
+                        <Link href="/secured/login" className="icon-link" title="Login"><User size={20} /></Link>
                     )}
                 </div>
 
-                {/* 4. MOBILE RIGHT SECTION (Search + Cart) */}
+                {/* 4. MOBILE RIGHT SECTION */}
                 <div className="mobile-right-section">
-                    <div className="mobile-search-trigger">
-                        <Search size={20} />
-                    </div>
+                    <div className="mobile-search-trigger"><Search size={20} /></div>
                     <Link href="/cart" className="mobile-cart-link" style={{ position: 'relative' }}>
                         <ShoppingBag size={20} />
                         {cartCount > 0 && <span style={{
-                            position: 'absolute',
-                            top: '-5px',
-                            right: '-5px',
-                            background: '#c41e3a',
-                            color: 'white',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            borderRadius: '50%',
-                            width: '16px',
-                            height: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            position: 'absolute', top: '-5px', right: '-5px',
+                            background: '#c41e3a', color: 'white', fontSize: '10px',
+                            fontWeight: 'bold', borderRadius: '50%', width: '16px', height: '16px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>{cartCount}</span>}
                     </Link>
                 </div>
@@ -252,72 +206,117 @@ export default function Header() {
                     <X className="mobile-menu-close" onClick={() => setMobileMenuOpen(false)} />
                 </div>
 
-                <Link href="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+                <div className="mobile-menu-content" style={{ overflowY: 'auto', flex: 1 }}>
+                    <Link href="/" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
 
-                {/* Mobile Products Accordion */}
-                <div style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <button
-                        className="mobile-link mobile-accordion-trigger"
-                        onClick={() => setProductsOpen(!productsOpen)}
-                        style={{
-                            width: '100%',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            textAlign: 'left'
-                        }}
-                    >
-                        Products
-                        <ChevronDown size={16} style={{ transform: productsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.2s' }} />
-                    </button>
+                    {/* Mobile Products Accordion */}
+                    <div style={{ borderBottom: '1px solid #f0f0f0' }}>
+                        <button
+                            type="button"
+                            className="mobile-link mobile-accordion-trigger"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setMobileProductsOpen(prev => !prev);
+                            }}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                cursor: 'pointer',
+                                background: 'transparent',
+                                border: 'none',
+                                textAlign: 'left',
+                                padding: '15px 20px',
+                                fontSize: '15px',
+                                color: '#333'
+                            }}
+                        >
+                            <span style={{ fontWeight: 400 }}>Products</span>
+                            <ChevronDown
+                                size={16}
+                                style={{
+                                    transform: mobileProductsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.2s ease'
+                                }}
+                            />
+                        </button>
 
-                    {productsOpen && (
-                        <div className="mobile-accordion-content" style={{ background: '#fafafa' }}>
-                            <Link
-                                href="/products"
-                                className="mobile-link mobile-sublink"
-                                onClick={() => setMobileMenuOpen(false)}
-                                style={{ textTransform: 'none', fontWeight: 600 }}
-                            >
-                                All Products
-                            </Link>
-                            {categories.map((cat, i) => (
-                                <Link
-                                    href={`/products?cat=${encodeURIComponent(cat)}`}
-                                    key={i}
+                        {/* Render Dropdown Content */}
+                        {mobileProductsOpen && (
+                            <div className="mobile-accordion-content" style={{ background: '#fafafa', paddingBottom: '10px' }}>
+                                <div
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setMobileProductsOpen(false);
+                                        setMobileMenuOpen(false);
+                                        router.push('/products');
+                                    }}
                                     className="mobile-link mobile-sublink"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    // User requested normal writing (not caps)
-                                    style={{ textTransform: 'capitalize' }}
+                                    style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        borderBottom: 'none',
+                                        paddingTop: '10px',
+                                        paddingBottom: '10px',
+                                        cursor: 'pointer'
+                                    }}
                                 >
-                                    {cat}
-                                </Link>
-                            ))}
-                        </div>
+                                    All Products
+                                </div>
+
+                                {/* Dynamic Categories */}
+                                {(categories || []).map((cat, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setMobileProductsOpen(false);
+                                            setMobileMenuOpen(false);
+                                            router.push(`/products?cat=${encodeURIComponent(cat)}`);
+                                        }}
+                                        className="mobile-link mobile-sublink"
+                                        style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            textTransform: 'capitalize',
+                                            borderBottom: 'none',
+                                            paddingTop: '10px',
+                                            paddingBottom: '10px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        {cat}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <Link href="/shop" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Archive</Link>
+                    <Link href="/about" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+                    <Link href="/contact" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
+                    <Link href="/cart" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Cart</Link>
+
+                    {user ? (
+                        <>
+                            <Link href="/orders" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
+                            <button
+                                className="mobile-link mobile-link-btn"
+                                onClick={handleLogout}
+                            >
+                                Logout
+                            </button>
+                        </>
+                    ) : (
+                        <Link href="/secured/login" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Login</Link>
                     )}
                 </div>
-
-                <Link href="/shop" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Archive</Link>
-                <Link href="/about" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
-                <Link href="/contact" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
-                <Link href="/cart" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Cart</Link>
-
-                {user ? (
-                    <>
-                        <Link href="/orders" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
-                        <button
-                            className="mobile-link mobile-link-btn"
-                            onClick={handleLogout}
-                        >
-                            Logout
-                        </button>
-                    </>
-                ) : (
-                    <Link href="/secured/login" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Login</Link>
-                )}
             </div>
 
             {/* OVERLAY */}

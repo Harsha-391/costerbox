@@ -6,7 +6,9 @@
     /* Fallback if var doesn't exist */
     background-color: var(--brand-white, #ffffff);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    position: relative;
+    position: sticky;
+    /* Sticky Header */
+    top: 0;
     z-index: 1000;
     height: 100px;
     display: flex;

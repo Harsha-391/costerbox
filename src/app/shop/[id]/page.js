@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../context/CartContext';
 import { useWishlist } from '../../../context/WishlistContext';
 import ChatWindow from '../../../components/ChatWindow';
+import Image from 'next/image';
 import { ShoppingCart, CreditCard, MessageCircle, ArrowLeft, AlertTriangle, ChevronDown, X, Ruler, Truck, Droplets, HelpCircle, Layers, Heart } from 'lucide-react';
 import '../../../styles/product.css';
 import '../../../styles/size_guide.css';
@@ -323,8 +324,22 @@ export default function ProductDetailsPage() {
                 {/* ====== LEFT: GALLERY (MAIN + THUMBS) ====== */}
                 <div className="pdp-gallery-wrapper">
                     {/* Main Image View */}
-                    <div className="pdp-main-image-container">
-                        <img src={mainImage} alt={product.title} className="pdp-main-image" />
+                    <div className="pdp-main-image-container" style={{ minHeight: '400px', ...(!mainImage ? { backgroundColor: '#f0f0f0' } : {}) }}>
+                        {mainImage ? (
+                            <Image
+                                src={mainImage}
+                                alt={product.title || 'Product Image'}
+                                fill
+                                priority
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="pdp-main-image"
+                                style={{ objectFit: 'contain' }}
+                            />
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#ccc' }}>
+                                No Image
+                            </div>
+                        )}
                         {discount > 0 && <span className="pdp-discount-badge">-{discount}% OFF</span>}
                         {product.badge && <span className="pdp-badge">{product.badge}</span>}
                     </div>

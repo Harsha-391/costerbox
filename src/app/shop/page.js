@@ -7,6 +7,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import ChatWindow from '../../components/ChatWindow';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MessageCircle, ShoppingBag, X, Heart } from 'lucide-react';
 import { useWishlist } from '../../context/WishlistContext';
 import '../../styles/shop.css';
@@ -193,10 +194,13 @@ function ShopPageContent() {
                                                 finalImage = 'https://via.placeholder.com/400x500?text=No+Image';
                                             }
                                             return (
-                                                <img
+                                                <Image
                                                     src={finalImage}
-                                                    alt={product.title || 'Product Image'}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    alt={product.title || product.name || 'Product Image'}
+                                                    fill
+                                                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                                                    style={{ objectFit: 'cover' }}
+                                                    className="product-img"
                                                 />
                                             );
                                         })()}
@@ -204,7 +208,26 @@ function ShopPageContent() {
                                 </Link>
 
                                 <div className="card-details">
-                                    <span className="p-region">{product.region}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                        <span className="p-region">{product.region}</span>
+                                        {product.isCustomizable && (
+                                            <span style={{
+                                                fontSize: '10px',
+                                                textTransform: 'uppercase',
+                                                color: '#1a1a1a',
+                                                letterSpacing: '0.5px',
+                                                border: '1px solid #ddd',
+                                                padding: '2px 6px',
+                                                borderRadius: '2px',
+                                                background: '#f9f9f9',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '3px'
+                                            }}>
+                                                <MessageCircle size={10} /> Customizable
+                                            </span>
+                                        )}
+                                    </div>
 
                                     {/* 3. WRAP TITLE IN LINK */}
                                     <Link href={`/shop/${product.seoHandle || product.id}`} style={{ textDecoration: 'none' }}>
@@ -218,18 +241,6 @@ function ShopPageContent() {
                                         <button className="add-btn" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                             <ShoppingBag size={16} /> Add
                                         </button>
-
-                                        {/* CUSTOMIZATION BUTTON (Conditional) */}
-                                        {product.isCustomizable && (
-                                            <button
-                                                onClick={() => handleOpenChat(product)}
-                                                style={{ background: '#1a1a1a', color: '#fff', padding: '8px 12px', borderRadius: '4px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}
-                                                title="Chat with Artisan to Customize"
-                                            >
-                                                <MessageCircle size={16} />
-                                                Customize
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
                             </div>

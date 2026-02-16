@@ -67,8 +67,8 @@
     padding: 10px 15px;
     background: #fff;
     position: sticky;
-    top: 60px;
-    /* Below mobile header */
+    top: 70px;
+    /* Below sticky mobile header (70px height) */
     z-index: 90;
     border-bottom: 1px solid #eee;
 }
