@@ -35,6 +35,8 @@ function CheckoutContent() {
         phone: "", address: "", city: "", zip: "",
     });
 
+    const [paymentMode, setPaymentMode] = useState('full'); // 'full' or 'partial'
+
     // --- INITIALIZE CHECKOUT ITEMS ---
     useEffect(() => {
         const initCheckout = async () => {
@@ -90,33 +92,41 @@ function CheckoutContent() {
     }, [loading, productId, itemsToCheckout, router]);
 
 
-    // --- CALCULATIONS ---
     const calculateTotals = () => {
         let totalRaw = 0;
         let totalPayable = 0;
         let totalPending = 0;
 
+        const hasCustomItems = itemsToCheckout.some(item =>
+            item.isCustomizable || item.category?.toLowerCase() === 'hoops' || item.custom_metadata?.is_custom
+        );
+
         itemsToCheckout.forEach(item => {
-            // Clean price logic
-            const rawPrice = safePrice(item.price);
-            const itemTotal = rawPrice * item.quantity;
+            const isCustom = item.isCustomizable || item.category?.toLowerCase() === 'hoops' || item.custom_metadata?.is_custom;
 
-            // Custom logic: 70% Advance
-            const isCustom = item.isCustomizable || false;
+            // If it's already a partial price from the product page, we treat it as is
+            // BUT the new rule says they choose AT checkout.
+            // So we assume item.price is the FULL price here unless already marked as partial.
 
-            // Payable for this item
-            const itemPayable = isCustom ? Math.ceil(itemTotal * 0.70) : itemTotal;
-            const itemPending = itemTotal - itemPayable;
+            let itemFullPrice = safePrice(item.custom_metadata?.total_amount || item.price);
+            let qty = item.quantity || 1;
+            let itemTotal = itemFullPrice * qty;
+
+            if (isCustom && paymentMode === 'partial') {
+                let payable = Math.ceil(itemTotal * 0.7);
+                totalPayable += payable;
+                totalPending += (itemTotal - payable);
+            } else {
+                totalPayable += itemTotal;
+            }
 
             totalRaw += itemTotal;
-            totalPayable += itemPayable;
-            totalPending += itemPending;
         });
 
-        return { totalRaw, totalPayable, totalPending };
+        return { totalRaw, totalPayable, totalPending, hasCustomItems };
     };
 
-    const { totalRaw, totalPayable, totalPending } = calculateTotals();
+    const { totalRaw, totalPayable, totalPending, hasCustomItems } = calculateTotals();
 
 
     const handleChange = (e) => {
@@ -166,13 +176,14 @@ function CheckoutContent() {
                                 return {
                                     id: item.id || "unknown_item",
                                     name: item.name || item.title || "Unnamed",
-                                    price: p,
+                                    paidPrice: p, // Amount paid now (could be 70% or 100%)
                                     quantity: item.quantity,
                                     selectedSize: item.selectedSize || "",
                                     image: item.featuredImage || item.media?.[0] || "/placeholder.jpg",
-                                    isCustomizable: !!item.isCustomizable,
-                                    // Calculate specific amounts per item for record
-                                    amountPaid: item.isCustomizable ? Math.ceil(p * item.quantity * 0.70) : (p * item.quantity)
+                                    isCustom: !!item.custom_metadata?.is_custom,
+                                    paymentType: item.custom_metadata?.payment_type || 'full',
+                                    totalItemAmount: item.custom_metadata?.total_amount || p,
+                                    dueItemAmount: item.custom_metadata?.due_amount || 0
                                 };
                             }),
 
@@ -293,11 +304,40 @@ function CheckoutContent() {
                                 <div className="snippet-info">
                                     <h4>{item.name || item.title}</h4>
                                     <p>Size: {item.selectedSize} | Qty: {item.quantity}</p>
-                                    <p style={{ fontWeight: 600 }}>₹{Number(item.price).toLocaleString('en-IN')}</p>
+                                    <p style={{ fontWeight: 600 }}>₹{safePrice(item.custom_metadata?.total_amount || item.price).toLocaleString('en-IN')}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
+
+                    {hasCustomItems && (
+                        <div style={{ marginBottom: '20px', padding: '15px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                            <h4 style={{ fontSize: '14px', marginBottom: '10px', color: '#166534' }}>Customization Detected:</h4>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={() => setPaymentMode('full')}
+                                    style={{
+                                        flex: 1, padding: '10px', fontSize: '12px', borderRadius: '6px', border: paymentMode === 'full' ? '2px solid #166534' : '1px solid #ddd',
+                                        background: paymentMode === 'full' ? '#fff' : '#f9f9f9', fontWeight: paymentMode === 'full' ? 'bold' : 'normal', cursor: 'pointer'
+                                    }}
+                                >
+                                    Full Payment
+                                </button>
+                                <button
+                                    onClick={() => setPaymentMode('partial')}
+                                    style={{
+                                        flex: 1, padding: '10px', fontSize: '12px', borderRadius: '6px', border: paymentMode === 'partial' ? '2px solid #166534' : '1px solid #ddd',
+                                        background: paymentMode === 'partial' ? '#fff' : '#f9f9f9', fontWeight: paymentMode === 'partial' ? 'bold' : 'normal', cursor: 'pointer'
+                                    }}
+                                >
+                                    70% Advance
+                                </button>
+                            </div>
+                            <p style={{ fontSize: '11px', marginTop: '8px', color: '#15803d' }}>
+                                * Remaining 30% will be due before dispatch.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="price-row">
                         <span>Subtotal</span>

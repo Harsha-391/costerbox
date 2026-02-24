@@ -119,15 +119,12 @@ export default function LiveChatsPage() {
                             <div style={{ height: '100%' }}>
                                 <ChatWindow
                                     chatId={`order_${selectedChat.id}`}
-                                    artisanId={selectedChat.artisanId} // Admin view acting as observer, strictly speaking userId is enough
+                                    artisanId={selectedChat.artisanId}
+                                    artisanName={selectedChat.artisanName}
                                     customerId={selectedChat.userId}
                                     productName={selectedChat.product?.name}
-                                    isArtisanView={false} // Admin view
-                                    isAdminView={true} // Add this prop to ChatWindow if needed, or re-use existing logic
-                                // For simplicity, we re-use ChatWindow. It expects artisanId & customerId to differentiate sender.
-                                // As Admin, we are just viewing. ChatWindow might need a 'readonly' or 'admin' mode.
-                                // Current ChatWindow uses `useAuth` to determine 'me'. 
-                                // If currentUser.uid != artisanId AND != customerId, it might treat messages as 'other'.
+                                    isArtisanView={false}
+                                    isAdminView={true}
                                 />
                             </div>
                         </>

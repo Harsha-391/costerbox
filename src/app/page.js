@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '../lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useWishlist } from '../context/WishlistContext';
 import { Heart } from 'lucide-react';
 import '@/styles/home.css';
@@ -20,7 +20,13 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState({ state: 'idle', message: '' });
   const { isInWishlist, toggleWishlist } = useWishlist();
+
+  // Import addDoc and serverTimestamp from firebase/firestore if not already there
+  // (Adding them via separate chunk or checking imports)
+
 
   // ========= FETCH DATA FROM FIRESTORE =========
   useEffect(() => {
@@ -237,7 +243,27 @@ export default function HomePage() {
     }).length;
   };
 
+  const handleNewsletter = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) return;
+
+    setNewsletterStatus({ state: 'loading', message: '' });
+    try {
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email: newsletterEmail.trim(),
+        subscribedAt: serverTimestamp()
+      });
+      setNewsletterEmail('');
+      setNewsletterStatus({ state: 'success', message: 'Successfully subscribed!' });
+      setTimeout(() => setNewsletterStatus({ state: 'idle', message: '' }), 5000);
+    } catch (err) {
+      console.error('Newsletter error:', err);
+      setNewsletterStatus({ state: 'error', message: 'Failed to subscribe. Please try again.' });
+    }
+  };
+
   // ========= RENDER =========
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', color: '#888' }}>
@@ -435,13 +461,38 @@ export default function HomePage() {
         <div className="container">
           <h3 className="nl-heading">Subscribe to Offers & Newsletters</h3>
           <p className="nl-text">Be the first to know about new collections, exclusive offers, and more.</p>
-          <form className="nl-form" onSubmit={(e) => e.preventDefault()}>
-            <input type="email" placeholder="Enter your email address" className="nl-input" />
-            <button type="submit" className="nl-btn">Subscribe</button>
+          <form className="nl-form" onSubmit={handleNewsletter}>
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              className="nl-input"
+              value={newsletterEmail}
+              onChange={(e) => setNewsletterEmail(e.target.value)}
+              required
+              disabled={newsletterStatus.state === 'loading'}
+            />
+            <button
+              type="submit"
+              className="nl-btn"
+              disabled={newsletterStatus.state === 'loading'}
+            >
+              {newsletterStatus.state === 'loading' ? 'Subscribing...' : 'Subscribe'}
+            </button>
           </form>
+          {newsletterStatus.message && (
+            <p style={{
+              marginTop: '15px',
+              fontSize: '14px',
+              color: newsletterStatus.state === 'success' ? '#2e7d32' : '#d32f2f',
+              fontWeight: '600'
+            }}>
+              {newsletterStatus.message}
+            </p>
+          )}
           <p className="nl-disclaimer">*By completing this form you're signing up to receive our emails and can unsubscribe at any time.</p>
         </div>
       </section>
+
     </>
   );
 }

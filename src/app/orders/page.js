@@ -189,11 +189,12 @@ export default function MyOrdersPage() {
                                         )}
                                         {order.status === 'pending_artisan_acceptance' && (
                                             <div style={{
-                                                marginTop: '8px', background: '#fff7ed', color: '#c2410c',
-                                                padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold',
-                                                border: '1px solid #fed7aa'
+                                                marginTop: '8px', background: '#fffbeb', color: '#92400e',
+                                                padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '500',
+                                                border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: '8px'
                                             }}>
-                                                Waiting for Artisan Acceptance...
+                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#F59E0B', animation: 'pulse 2s infinite' }}></div>
+                                                Please wait, an artisan will accept your order within 2 hours.
                                             </div>
                                         )}
                                     </div>
@@ -210,6 +211,7 @@ export default function MyOrdersPage() {
                     <ChatWindow
                         chatId={`order_${selectedChatOrder.id}`}
                         artisanId={selectedChatOrder.artisanId}
+                        artisanName={selectedChatOrder.artisanName}
                         customerId={user.uid}
                         productName={selectedChatOrder.product?.name}
                         onClose={() => setSelectedChatOrder(null)}

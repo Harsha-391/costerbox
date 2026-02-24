@@ -5,7 +5,7 @@ import { db, auth } from '../../../../lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { MapPin, MessageCircle, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { MapPin, MessageCircle, AlertTriangle, CheckCircle, Clock, ShieldAlert } from 'lucide-react';
 import ChatWindow from '../../../../components/ChatWindow';
 
 const ZONES = ["North India", "South India", "East India", "West India", "Central India"];
@@ -111,9 +111,14 @@ export default function ArtisanDashboard() {
         artisanId: currentUser.uid,
         artisanEmail: currentUser.email,
         artisanName: artisanProfile.name || "Artisan",
-        acceptedAt: new Date()
+        acceptedAt: new Date(),
+        chatStartedAt: new Date() // Start the 1-hour clock
       });
-      alert("Order Accepted! It is now in your 'Active Orders' tab.");
+
+      // TRIGGER WHATSAPP NOTIFICATION
+      sendWhatsAppNotification(order);
+
+      alert("Order Accepted! Important: You must submit the initial sketch within 1 hour in the chat.");
       setActiveTab('active');
     } catch (err) {
       console.error(err);
@@ -159,6 +164,16 @@ export default function ArtisanDashboard() {
     );
   }
 
+  // --- TRIGGER WHATSAPP (HELPER) ---
+  const sendWhatsAppNotification = async (order) => {
+    console.log(`Triggering WhatsApp for Order ${order.id} to ${order.shipping?.phone}`);
+    // This would ideally call a backend API that uses Meta WhatsApp API or Twilio
+    // For now, we simulate the action
+    try {
+      // await fetch('/api/whatsapp/notify-acceptance', { method: 'POST', body: JSON.stringify({ orderId: order.id, ... }) });
+    } catch (e) { console.error("WA Notify Error", e); }
+  };
+
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', paddingBottom: '80px' }}>
 
@@ -171,6 +186,33 @@ export default function ArtisanDashboard() {
         <div style={{ textAlign: 'right' }}>
           <span style={{ display: 'block', fontSize: '12px', color: '#888' }}>Logged in as</span>
           <strong>{artisanProfile.name || currentUser.email}</strong>
+        </div>
+      </div>
+
+      {/* BLACKLIST WARNING */}
+      {artisanProfile.isBlacklisted && (
+        <div style={{ background: '#fef2f2', border: '2px solid #ef4444', borderRadius: '12px', padding: '20px', marginBottom: '25px', textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+          <ShieldAlert size={48} color="#dc2626" style={{ margin: '0 auto 15px auto' }} />
+          <h2 style={{ color: '#991b1b', margin: '0 0 10px 0', fontSize: '20px' }}>Account Suspended</h2>
+          <p style={{ color: '#7f1d1d', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
+            Your artisan account has been blacklisted for violating platform safety or design rules.
+            You cannot accept new orders. Please contact support at <strong>support@costerbox.com</strong> if you believe this is an error.
+          </p>
+        </div>
+      )}
+
+      {/* RULES REMINDER BANNER */}
+      <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <AlertTriangle size={20} color="#b45309" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h4 style={{ margin: '0 0 5px 0', fontSize: '14px', color: '#9a3412' }}>Crucial Artisan Rules:</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#78350f', lineHeight: '1.6' }}>
+              <li><strong>1-Hour Deadline:</strong> You MUST submit the initial sketch within 1 hour of accepting an order.</li>
+              <li><strong>Anonymity:</strong> Do NOT share your phone number, social media, or personal address in chat.</li>
+              <li><strong>Penalties:</strong> Violations will lead to permanent blacklisting and forfeiture of earnings.</li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -233,10 +275,17 @@ export default function ArtisanDashboard() {
 
                 <div style={{ marginTop: '20px' }}>
                   <button
-                    onClick={() => acceptOrder(order)}
-                    style={{ width: '100%', padding: '14px', background: '#000', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    onClick={() => !artisanProfile.isBlacklisted && acceptOrder(order)}
+                    disabled={artisanProfile.isBlacklisted}
+                    style={{
+                      width: '100%', padding: '14px',
+                      background: artisanProfile.isBlacklisted ? '#ccc' : '#000',
+                      color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold',
+                      cursor: artisanProfile.isBlacklisted ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                    }}
                   >
-                    <CheckCircle size={20} /> Accept Order
+                    <CheckCircle size={20} /> {artisanProfile.isBlacklisted ? "Account Suspended" : "Accept Order"}
                   </button>
                 </div>
               </div>
@@ -363,6 +412,7 @@ export default function ArtisanDashboard() {
           <ChatWindow
             chatId={`order_${chatOrder.id}`}
             artisanId={currentUser.uid}
+            artisanName={artisanProfile?.name || "Artisan"}
             customerId={chatOrder.userId}
             productName={chatOrder.product?.name}
             onClose={() => setChatOrder(null)}

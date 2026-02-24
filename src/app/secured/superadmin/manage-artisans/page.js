@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, orderBy } from 'firebase/firestore';
-import { Search, Edit, Eye, User, Phone, MapPin, Package, ShoppingBag, X, Check, Save } from 'lucide-react';
+import { Search, Edit, Eye, User, Phone, MapPin, Package, ShoppingBag, X, Check, Save, ShieldAlert } from 'lucide-react';
 
 export default function ManageArtisansPage() {
     const [artisans, setArtisans] = useState([]);
@@ -134,6 +134,29 @@ export default function ManageArtisansPage() {
         }
     };
 
+    const handleToggleBlacklist = async (artisan) => {
+        const action = artisan.isBlacklisted ? "whitelist" : "blacklist";
+        if (!window.confirm(`Are you sure you want to ${action} ${artisan.name}?`)) return;
+
+        try {
+            const docRef = doc(db, "users", artisan.id);
+            const newState = !artisan.isBlacklisted;
+            await updateDoc(docRef, {
+                isBlacklisted: newState
+            });
+
+            // Update local state
+            setArtisans(prev => prev.map(a => a.id === artisan.id ? { ...a, isBlacklisted: newState } : a));
+            if (selectedArtisan?.id === artisan.id) {
+                setSelectedArtisan(prev => ({ ...prev, isBlacklisted: newState }));
+            }
+            alert(`Artisan ${action}ed successfully.`);
+        } catch (e) {
+            console.error(`Error ${action}ing artisan:`, e);
+            alert(`Failed to ${action} artisan.`);
+        }
+    };
+
     return (
         <div style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto' }}>
 
@@ -195,7 +218,10 @@ export default function ManageArtisansPage() {
                                                 {artisan.name.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <div style={{ fontWeight: '500' }}>{artisan.name}</div>
+                                                <div style={{ fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    {artisan.name}
+                                                    {artisan.isBlacklisted && <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>BLACKLISTED</span>}
+                                                </div>
                                                 <div style={{ fontSize: '12px', color: '#888' }}>ID: {artisan.id.substring(0, 6)}...</div>
                                             </div>
                                         </div>
@@ -211,6 +237,20 @@ export default function ManageArtisansPage() {
                                         {artisan.joinedAt.toLocaleDateString()}
                                     </td>
                                     <td style={{ padding: '15px', textAlign: 'right' }}>
+                                        <button
+                                            onClick={() => handleToggleBlacklist(artisan)}
+                                            style={{
+                                                padding: '6px',
+                                                marginRight: '5px',
+                                                background: artisan.isBlacklisted ? '#fee2e2' : '#f3f4f6',
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer'
+                                            }}
+                                            title={artisan.isBlacklisted ? "Whitelist Artisan" : "Blacklist Artisan"}
+                                        >
+                                            <ShieldAlert size={16} color={artisan.isBlacklisted ? "#dc2626" : "#444"} />
+                                        </button>
                                         <button onClick={() => handleViewProfile(artisan)} style={{ padding: '6px', marginRight: '5px', background: 'none', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }} title="View Profile">
                                             <Eye size={16} color="#444" />
                                         </button>
@@ -345,9 +385,26 @@ export default function ManageArtisansPage() {
                             {/* Footer Actions */}
                             <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                                 <button
+                                    onClick={() => handleToggleBlacklist(selectedArtisan)}
+                                    style={{
+                                        padding: '10px 20px',
+                                        background: selectedArtisan.isBlacklisted ? '#10b981' : '#ef4444',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontWeight: '600',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <ShieldAlert size={16} />
+                                    {selectedArtisan.isBlacklisted ? 'Whitelist Artisan' : 'Blacklist Artisan'}
+                                </button>
+                                <button
                                     onClick={() => {
                                         setEditingArtisan(selectedArtisan);
-                                        // setSelectedArtisan(null); // Keep ID card open OR close it, usually better to close profile when opening edit.
                                         setSelectedArtisan(null);
                                     }}
                                     style={{ padding: '10px 20px', background: '#00af50', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}

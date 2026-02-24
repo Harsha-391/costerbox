@@ -9,7 +9,7 @@ import { db, storage } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
 import { Send, Mic, Image as ImageIcon, ShieldAlert, XCircle } from "lucide-react";
 
-export default function ChatWindow({ chatId, artisanId, productName, onClose }) {
+export default function ChatWindow({ chatId, artisanId, artisanName, productName, onClose }) {
     const { user, role } = useAuth();
     const [messages, setMessages] = useState([]);
     const [chatData, setChatData] = useState(null);
@@ -128,16 +128,30 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
         <div style={styles.container}>
             {/* Header */}
             <div style={styles.header}>
-                <div>
-                    <h3 style={{ fontWeight: 'bold', margin: 0 }}>{productName}</h3>
-                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>Customization Request</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={styles.avatar}>
+                        {(artisanName || "Artisan").charAt(0)}
+                    </div>
+                    <div>
+                        <h3 style={{ fontWeight: 'bold', margin: 0, fontSize: '15px' }}>
+                            Chatting with {(artisanName || "Artisan").split(' ')[0]}
+                        </h3>
+                        <span style={{ fontSize: '11px', color: '#9ca3af', display: 'block' }}>{productName}</span>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <a
+                        href="https://wa.me/91XXXXXXXXXX" // Replace with actual support number
+                        target="_blank"
+                        style={styles.supportLink}
+                    >
+                        Contact Support
+                    </a>
                     {(role === 'admin' || role === 'superadmin') && (
                         <button
                             onClick={toggleHijack}
                             style={{
-                                fontSize: '12px', padding: '4px 8px', borderRadius: '4px', border: 'none', color: '#fff', cursor: 'pointer',
+                                fontSize: '11px', padding: '4px 8px', borderRadius: '4px', border: 'none', color: '#fff', cursor: 'pointer',
                                 background: chatData?.hijackedBy ? '#ef4444' : '#374151'
                             }}
                         >
@@ -145,8 +159,24 @@ export default function ChatWindow({ chatId, artisanId, productName, onClose }) 
                         </button>
                     )}
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
-                        <XCircle />
+                        <XCircle size={20} />
                     </button>
+                </div>
+            </div>
+
+            {/* SAFETY RULES BANNER */}
+            <div style={styles.rulesBanner}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <ShieldAlert size={16} color="#dc2626" style={{ flexShrink: 0 }} />
+                    <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.4' }}>
+                        <strong>Safety Rules:</strong> This chat is anonymous. Sharing personal details (phone, email, socials) is <strong>strictly prohibited</strong>. Violations will lead to blacklisting & forfeiture of prepaid amount.
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <AlertTriangle size={16} color="#b45309" style={{ flexShrink: 0 }} />
+                    <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.4' }}>
+                        <strong>Design Rules:</strong> Changes after design locking require <strong>extra payment</strong>. Initial sketch will be shared within 1 hour.
+                    </p>
                 </div>
             </div>
 
@@ -222,5 +252,14 @@ const styles = {
     },
     sendBtn: {
         background: '#1a1a1a', color: '#fff', padding: '8px', borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    },
+    avatar: {
+        width: '36px', height: '36px', borderRadius: '50%', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px', color: '#fff'
+    },
+    supportLink: {
+        fontSize: '11px', color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer'
+    },
+    rulesBanner: {
+        padding: '12px', background: '#fffbeb', borderBottom: '1px solid #fef3c7', color: '#78350f'
     }
 };

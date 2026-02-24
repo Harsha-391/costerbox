@@ -167,9 +167,8 @@ export default function ProductDetailsPage() {
         router.push('/cart');
     };
 
-    // --- HANDLE CUSTOM PAYMENT (MODAL) ---
-    const handleCustomPayment = (type) => {
-        let payNowPrice = finalPrice;
+    // --- HANDLE CUSTOMIZATION ACTION (MODAL) ---
+    const handleCustomizeAction = () => {
         let customDesc = "Custom Order";
         let baseSize = "";
 
@@ -184,23 +183,12 @@ export default function ProductDetailsPage() {
             return;
         }
 
-        let dueAmount = 0;
-        if (type === 'partial') {
-            payNowPrice = Math.ceil(finalPrice * 0.7);
-            dueAmount = finalPrice - payNowPrice;
-            customDesc += ` (70% Advance)`;
-        } else {
-            customDesc += ` (Full Custom Payment)`;
-        }
-
         const customProduct = {
             ...product,
-            price: payNowPrice,
+            price: finalPrice, // Always add at full price, split happens at checkout
             custom_metadata: {
                 is_custom: true,
-                payment_type: type, // 'partial' or 'full'
                 total_amount: finalPrice,
-                due_amount: dueAmount,
                 base_desc: customDesc
             }
         };
@@ -251,6 +239,7 @@ export default function ProductDetailsPage() {
                     <ChatWindow
                         chatId={`inquiry_${user.uid}_${product.id}`}
                         artisanId={product.artisanId}
+                        artisanName={product.artisanName}
                         productName={product.name || product.title}
                         onClose={() => setIsChatOpen(false)}
                     />
@@ -538,68 +527,84 @@ export default function ProductDetailsPage() {
                                 </button>
 
                                 <h2 style={{ fontSize: '1.5rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <AlertTriangle color="#f59e0b" /> Customization
+                                    <AlertTriangle color="#f59e0b" /> Customization Terms
                                 </h2>
 
-                                <p style={{ marginBottom: '20px', lineHeight: '1.6', color: '#555' }}>
-                                    Customizing this product requires a <strong>70% upfront payment</strong> before our artisans begin their work.
-                                    The remaining 30% will be due before dispatch.
-                                </p>
-
-                                <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '4px', marginBottom: '20px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                        <span>Total Price:</span>
-                                        <strong>₹{finalPrice.toLocaleString('en-IN')}</strong>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#1a1a1a' }}>
-                                        <span>70% Advance:</span>
-                                        <strong>₹{Math.ceil(finalPrice * 0.7).toLocaleString('en-IN')}</strong>
-                                    </div>
+                                <div style={{ fontSize: '13px', background: '#fff7ed', padding: '12px', border: '1px solid #fed7aa', borderRadius: '6px', marginBottom: '20px', color: '#9a3412' }}>
+                                    <strong>Important:</strong> Designing this product requires a 70% upfront payment. Once our artisan starts working and the design is locked, any further changes will require <strong>extra payment</strong>.
                                 </div>
 
-                                <h4 style={{ marginBottom: '10px' }}>Choose Payment Option:</h4>
+                                <p style={{ marginBottom: '20px', lineHeight: '1.6', color: '#555', fontSize: '14px' }}>
+                                    Accepting these terms? Click below to add this bespoke product to your bag. You can choose to pay the <strong>Full Amount</strong> or a <strong>70% Advance</strong> on the final checkout screen.
+                                </p>
 
                                 <button
-                                    onClick={() => handleCustomPayment('partial')}
+                                    onClick={handleCustomizeAction}
                                     style={{
                                         width: '100%',
-                                        padding: '15px',
+                                        padding: '16px',
                                         background: '#1a1a1a',
                                         color: '#fff',
                                         border: 'none',
-                                        borderRadius: '4px',
-                                        marginBottom: '10px',
+                                        borderRadius: '8px',
                                         cursor: 'pointer',
                                         fontWeight: 'bold',
-                                        display: 'flex',
-                                        justifyContent: 'space-between'
+                                        fontSize: '16px'
                                     }}
                                 >
-                                    <span>Pay 70% Advance</span>
-                                    <span>₹{Math.ceil(finalPrice * 0.7).toLocaleString('en-IN')}</span>
-                                </button>
-
-                                <button
-                                    onClick={() => handleCustomPayment('full')}
-                                    style={{
-                                        width: '100%',
-                                        padding: '15px',
-                                        background: 'transparent',
-                                        color: '#1a1a1a',
-                                        border: '1px solid #1a1a1a',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        fontWeight: 'bold',
-                                        display: 'flex',
-                                        justifyContent: 'space-between'
-                                    }}
-                                >
-                                    <span>Pay Full Amount</span>
-                                    <span>₹{finalPrice.toLocaleString('en-IN')}</span>
+                                    Add to Bag & Customize (₹{finalPrice.toLocaleString('en-IN')})
                                 </button>
                             </div>
                         </div>
                     )}
+
+                    {/* SIZE & PRICE CHART (Transparency) */}
+                    <div style={{ margin: '30px 0 20px 0', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+                        <div style={{ background: '#f9fafb', padding: '12px 15px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Ruler size={16} color="#4b5563" />
+                            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Price & Size Guide</span>
+                        </div>
+                        <div style={{ padding: '15px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                <tbody>
+                                    {isHoopCategory ? (
+                                        <>
+                                            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                <td style={{ padding: '8px 0', color: '#6b7280' }}>10 inch (Standard)</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹2,000</td>
+                                            </tr>
+                                            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                <td style={{ padding: '8px 0', color: '#6b7280' }}>12 inch (+20% size)</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹2,200</td>
+                                            </tr>
+                                            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                <td style={{ padding: '8px 0', color: '#6b7280' }}>14 inch (+40% size)</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹2,700</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '8px 0', color: '#6b7280' }}>Add-on: Tassels (Per piece)</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600', color: '#16a34a' }}>+₹70</td>
+                                            </tr>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                <td style={{ padding: '8px 0', color: '#6b7280' }}>Standard Product</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹{Number(product.price || 0).toLocaleString('en-IN')}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ padding: '8px 0', color: '#6b7280' }}>Bespoke Customization</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600', color: '#16a34a' }}>Starts at +₹500</td>
+                                            </tr>
+                                        </>
+                                    )}
+                                </tbody>
+                            </table>
+                            <p style={{ margin: '12px 0 0 0', fontSize: '11px', color: '#9ca3af', fontStyle: 'italic' }}>
+                                * Final price adjusts dynamically as you select options above. 70% advance required for custom work.
+                            </p>
+                        </div>
+                    </div>
 
                     {/* DESCRIPTION (With Overflow Protection) */}
                     <div className="pdp-description-container">

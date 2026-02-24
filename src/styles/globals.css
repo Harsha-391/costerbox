@@ -21,6 +21,24 @@
   box-sizing: border-box;
 }
 
+/* Global text wrapping — safe defaults */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+span,
+a,
+li,
+td,
+th,
+label {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
 body {
   font-family: 'Lato', sans-serif;
   background-color: var(--brand-cream);
