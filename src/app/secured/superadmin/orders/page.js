@@ -145,6 +145,7 @@ export default function AdminOrdersPage() {
         if (s === 'shipped') return { background: '#dbeafe', color: '#1e40af' };
         if (s === 'paid') return { background: '#e0f2fe', color: '#0369a1' };
         if (s === 'pending_artisan_acceptance') return { background: '#ffedd5', color: '#c2410c' };
+        if (s === 'product_ready_by_artisan') return { background: '#fef08a', color: '#854d0e' };
         return { background: '#fef9c3', color: '#854d0e' };
     };
 
@@ -172,6 +173,7 @@ export default function AdminOrdersPage() {
                         <option value="pending">Pending</option>
                         <option value="paid">Processing (Paid)</option>
                         <option value="pending_artisan_acceptance">Artisan Pending</option>
+                        <option value="product_ready_by_artisan">Artisan Ready (Dispatch Info)</option>
                         <option value="shipped">Shipped</option>
                         <option value="delivered">Delivered</option>
                     </select>
@@ -262,6 +264,23 @@ export default function AdminOrdersPage() {
                             <button onClick={() => setEditingOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✕</button>
                         </div>
 
+                        {/* Notification for Remaining 30% */}
+                        {editingOrder.status === 'product_ready_by_artisan' && editingOrder.payment?.type === 'PARTIAL_ADVANCE' && (
+                            <div style={{ marginBottom: '15px', padding: '10px', background: '#fef08a', borderRadius: '8px', border: '1px solid #ca8a04' }}>
+                                <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#854d0e' }}>
+                                    <strong>Artisan ready!</strong> The user owes 30% before dispatch.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        alert(`Notice: SMS/Email sent to ${editingOrder.shipping?.phone} & ${editingOrder.shipping?.email} with payment link for the remaining 30%.`);
+                                    }}
+                                    style={{ ...shipBtn, background: '#ca8a04' }}
+                                >
+                                    <MessageCircle size={16} /> Notify User for 30% Due
+                                </button>
+                            </div>
+                        )}
+
                         {/* Shipping logic */}
                         {editingOrder.status !== 'shipped' && (
                             <button onClick={handleShip} style={shipBtn}><Truck size={16} /> Create Shiprocket Shipment</button>
@@ -272,6 +291,7 @@ export default function AdminOrdersPage() {
                             <select name="status" defaultValue={editingOrder.status} style={input}>
                                 <option value="paid">Processing (Paid)</option>
                                 <option value="pending_artisan_acceptance">Artisan Pending</option>
+                                <option value="product_ready_by_artisan">Ready for Dispatch / 30% Due</option>
                                 <option value="shipped">Shipped</option>
                                 <option value="delivered">Delivered</option>
                             </select>

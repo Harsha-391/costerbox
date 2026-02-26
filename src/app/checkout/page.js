@@ -199,8 +199,8 @@ function CheckoutContent() {
                             },
 
                             orderId: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                            status: totalPending > 0 ? "pending_artisan_acceptance" : "paid",
-                            isCustomOrder: totalPending > 0, // Flag if *any* custom exists
+                            status: hasCustomItems ? "pending_artisan_acceptance" : "paid",
+                            isCustomOrder: hasCustomItems, // Flag if *any* custom exists
                             createdAt: serverTimestamp()
                         };
 
@@ -211,8 +211,8 @@ function CheckoutContent() {
                             clearCart();
                         }
 
-                        // 4. Auto-Ship (Only if fully paid)
-                        if (totalPending === 0) {
+                        // 4. Auto-Ship (Only if not custom and fully paid)
+                        if (!hasCustomItems && totalPending === 0) {
                             fetch('/api/shiprocket/create-order', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },

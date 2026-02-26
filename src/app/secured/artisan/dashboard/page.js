@@ -139,6 +139,22 @@ export default function ArtisanDashboard() {
     alert("Order flagged. Superadmin has been notified.");
   };
 
+  // ACTION: MARK READY
+  const markReady = async (orderId) => {
+    const confirmed = window.confirm("Are you sure this product is complete and ready for pickup?");
+    if (!confirmed) return;
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        status: 'product_ready_by_artisan',
+        readyAt: new Date()
+      });
+      alert("Order marked as ready. Admin has been notified.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update status.");
+    }
+  };
+
   if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>Loading Dashboard...</div>;
 
   // --- ZONE SELECTION SCREEN ---
@@ -311,13 +327,25 @@ export default function ArtisanDashboard() {
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setChatOrder(order)}
-                    style={{ flex: 1, padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    style={{ flex: 1, padding: '10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '150px' }}
                   >
                     <MessageCircle size={18} /> Chat with Customer
                   </button>
+                  {order.status !== 'product_ready_by_artisan' ? (
+                    <button
+                      onClick={() => markReady(order.id)}
+                      style={{ flex: 1, padding: '10px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '150px' }}
+                    >
+                      <CheckCircle size={18} /> Mark Ready
+                    </button>
+                  ) : (
+                    <span style={{ flex: 1, padding: '10px', background: '#d1fae5', color: '#065f46', border: '1px solid #10b981', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minWidth: '150px', fontWeight: 'bold' }}>
+                      <CheckCircle size={18} /> Ready for Pickup
+                    </span>
+                  )}
                   <button
                     onClick={() => flagOrder(order.id)}
                     style={{ padding: '10px', background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
