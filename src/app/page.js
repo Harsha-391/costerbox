@@ -217,6 +217,11 @@ export default function HomePage() {
 
   // ========= CATEGORY IMAGE (use first product image from that category) =========
   const getCategoryImage = (catName) => {
+      // First, check if the category itself has a feature image uploaded via admin
+      const catObj = categories.find(c => c.name === catName);
+      if (catObj && catObj.imageUrl) return catObj.imageUrl;
+  
+      // Fallback: use the first product image from that category
     const safeCatName = String(catName).trim().toLowerCase();
     const normCatName = safeCatName.replace(/s$/, '');
 
