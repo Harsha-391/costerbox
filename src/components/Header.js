@@ -114,6 +114,7 @@ export default function Header() {
                     </div>
 
                     <Link href="/shop" className="icon-link">Archive</Link>
+                    <Link href="/blog" className="icon-link">Blog</Link>
 
                     {/* Search Bar Logic */}
                     <div className={`search-container ${searchOpen ? 'active' : ''}`}>
@@ -301,6 +302,7 @@ export default function Header() {
                     <Link href="/shop" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Archive</Link>
                     <Link href="/about" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
                     <Link href="/contact" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
+                    <Link href="/blog" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Blog</Link>
                     <Link href="/cart" className="mobile-link" onClick={() => setMobileMenuOpen(false)}>Cart</Link>
 
                     {user ? (

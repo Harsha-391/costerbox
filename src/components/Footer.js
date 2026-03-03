@@ -15,6 +15,7 @@ export default function Footer() {
             <h4>Need Help</h4>
             <ul>
               <li><a href="/about">About Us</a></li>
+              <li><a href="/blog">Blog</a></li>
               <li><a href="/refund-policy">Refund Policy</a></li>
               <li><a href="/terms">Terms &amp; Conditions</a></li>
               <li><a href="/privacy">Privacy Policy</a></li>
@@ -31,6 +32,7 @@ export default function Footer() {
               <li><a href="/faqs">FAQs</a></li>
               <li><a href="/contact">Contact Us</a></li>
               <li><a href="/sitemap">Site Map</a></li>
+
             </ul>
           </div>
 
@@ -41,7 +43,7 @@ export default function Footer() {
               <li><a href="/our-family">Our Family</a></li>
               <li><a href="/custom/bespoke">Create Your Own</a></li>
               <li><a href="/custom/upcycle">Upcycled</a></li>
-
+              <li><a href="/blog">Blog</a></li>
             </ul>
           </div>
 

@@ -8,7 +8,7 @@ import { useCart } from "../../context/CartContext";
 import Script from "next/script";
 import { Lock, CreditCard, MapPin } from "lucide-react";
 import "../../styles/checkout.css";
-import { generateInvoicePDF } from "../../utils/generateInvoice"; // Import PDF Generator
+import "../../styles/checkout.css";
 
 const safePrice = (p) => {
     if (!p) return 0;
@@ -223,7 +223,8 @@ function CheckoutContent() {
                         // === GENERATE INVOICE ===
                         // Generate the bill immediately for the user
                         try {
-                            generateInvoicePDF({ ...safePayload, createdAt: { seconds: Date.now() / 1000 } });
+                            const utils = await import("../../utils/generateInvoice");
+                            utils.generateInvoicePDF({ ...safePayload, createdAt: { seconds: Date.now() / 1000 } });
                             alert("Order Placed Successfully! Your Invoice is downloading...");
                         } catch (pdfError) {
                             console.error("Invoice generation failed:", pdfError);

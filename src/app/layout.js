@@ -4,7 +4,7 @@ import { AuthProvider } from '../context/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import PromoStrip from '../components/PromoStrip';
-import InstagramReels from '../components/InstagramReels';
+import ConditionalInstagramReels from '../components/ConditionalInstagramReels';
 
 export const metadata = {
   title: 'Costerbox | Handcrafted Artistry',
@@ -38,8 +38,8 @@ export default function RootLayout({ children }) {
                 {children}
               </div>
 
-              {/* 3. Instagram Reels */}
-              <InstagramReels />
+              {/* 3. Instagram Reels (only on Home & About) */}
+              <ConditionalInstagramReels />
 
               {/* 4. Footer is now global */}
               <Footer />

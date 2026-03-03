@@ -82,8 +82,12 @@ export default function ArtisanDashboard() {
 
     const unsubMyWork = onSnapshot(qMyWork, (snap) => {
       const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Sort by date desc
-      orders.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      // Sort by date desc (handle Firebase Timestamp & native JS Date safely)
+      orders.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+        return timeB - timeA;
+      });
       setMyOrders(orders);
     });
 

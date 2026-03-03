@@ -1,8 +1,21 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import dynamic from 'next/dynamic';
 
-export const generateInvoicePDF = (order) => {
-    const doc = new jsPDF();
+export const generateInvoicePDF = async (order) => {
+    // Escape when building / SSR natively to prevent Turbopack errors entirely. This check works.
+    if (typeof window === "undefined") {
+        console.warn("Skipping PDF generation vertically on server.");
+        return;
+    }
+
+    // Explicitly load browser-side modules dynamically inside!
+    // NextJS understands this when called from a Client Event like onClick properly.
+    const _jspdf = await import('jspdf');
+    const _autotable = await import('jspdf-autotable');
+
+    const jsPDF = _jspdf.default || _jspdf.jsPDF || _jspdf;
+    const autoTable = _autotable.default || _autotable;
+
+    const doc = new jsPDF("p", "mm", "a4");
 
     // === HEADER ===
     doc.setFontSize(22);

@@ -7,7 +7,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import { Send, Mic, Image as ImageIcon, ShieldAlert, XCircle } from "lucide-react";
+import { Send, Mic, Image as ImageIcon, ShieldAlert, XCircle, AlertTriangle } from "lucide-react";
 
 export default function ChatWindow({ chatId, artisanId, artisanName, productName, onClose }) {
     const { user, role } = useAuth();
