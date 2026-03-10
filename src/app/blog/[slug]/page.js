@@ -13,6 +13,7 @@ export default function SingleBlogPost() {
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [relatedPosts, setRelatedPosts] = useState([]);
+    const [recentPosts, setRecentPosts] = useState([]);
 
     useEffect(() => {
         if (slug) fetchPost();
@@ -52,10 +53,11 @@ export default function SingleBlogPost() {
                     metaKw.setAttribute('content', postData.metaKeywords);
                 }
 
-                // Fetch related posts (same category)
+                // Fetch related and recent posts
                 if (postData.category) {
                     fetchRelated(postData.category, postData.id);
                 }
+                fetchRecent(postData.id);
             }
         } catch (err) {
             console.error('Error fetching post:', err);
@@ -82,6 +84,30 @@ export default function SingleBlogPost() {
         }
     };
 
+    const fetchRecent = async (currentId) => {
+        try {
+            const q = query(
+                collection(db, 'blogPosts'),
+                where('status', '==', 'published')
+            );
+            const snap = await getDocs(q);
+            const fetchedPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Sort client-side
+            fetchedPosts.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
+                return dateB - dateA;
+            });
+
+            // Filter out current post
+            const recent = fetchedPosts.filter(p => p.id !== currentId).slice(0, 5);
+            setRecentPosts(recent);
+        } catch (err) {
+            console.error('Error fetching recent posts:', err);
+        }
+    };
+
     const formatDate = (ts) => {
         if (!ts) return '';
         const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -99,7 +125,7 @@ export default function SingleBlogPost() {
     // --- LOADING ---
     if (loading) {
         return (
-            <div className="single-post">
+            <div className="single-post-wrapper">
                 <div className="blog-skeleton" style={{ height: '18px', width: '120px', marginBottom: '30px' }} />
                 <div className="blog-skeleton" style={{ height: '24px', width: '200px', marginBottom: '20px', borderRadius: '20px' }} />
                 <div className="blog-skeleton" style={{ height: '42px', width: '80%', marginBottom: '12px' }} />
@@ -116,7 +142,7 @@ export default function SingleBlogPost() {
     // --- NOT FOUND ---
     if (!post) {
         return (
-            <div className="single-post" style={{ textAlign: 'center', paddingTop: '100px' }}>
+            <div className="single-post-wrapper" style={{ textAlign: 'center', paddingTop: '100px' }}>
                 <h2 style={{ fontSize: '28px', color: '#333', marginBottom: '12px' }}>Post Not Found</h2>
                 <p style={{ color: '#999', marginBottom: '24px' }}>The blog post you&apos;re looking for doesn&apos;t exist or has been removed.</p>
                 <Link href="/blog" style={{ color: '#1a1a1a', fontWeight: 600, textDecoration: 'underline' }}>
@@ -127,39 +153,69 @@ export default function SingleBlogPost() {
     }
 
     return (
-        <div className="single-post">
-            {/* Back Link */}
-            <Link href="/blog" className="single-post__back">
-                <ArrowLeft size={16} /> Back to Blog
-            </Link>
+        <div className="single-post-wrapper">
+            <div className="single-post-container">
+                <main className="single-post-main">
+                    {/* Back Link */}
+                    <div style={{ marginBottom: '30px' }}>
+                        <Link href="/blog" className="single-post__back">
+                            <ArrowLeft size={16} /> Back to Blog
+                        </Link>
+                    </div>
 
-            {/* Category Badge */}
-            {post.category && (
-                <span className="single-post__category">{post.category}</span>
-            )}
+                    {/* Category Badge & Title Area */}
+                    <div className="single-post__header-area">
+                        {post.category && (
+                            <span className="single-post__category">{post.category}</span>
+                        )}
+                        <h1 className="single-post__title">{post.title}</h1>
+                    </div>
 
-            {/* Title */}
-            <h1 className="single-post__title">{post.title}</h1>
+                    {/* Meta Info */}
+                    <div className="single-post__meta">
+                        <span><Calendar size={14} /> {formatDate(post.createdAt)}</span>
+                        <span><Clock size={14} /> {getReadingTime(post.content)}</span>
+                        {/* <span><Tag size={14} /> {post.category}</span> */}
+                    </div>
 
-            {/* Meta Info */}
-            <div className="single-post__meta">
-                <span><Calendar size={14} /> {formatDate(post.createdAt)}</span>
-                <span><Clock size={14} /> {getReadingTime(post.content)}</span>
-                {post.category && <span><Tag size={14} /> {post.category}</span>}
+                    {/* Featured Image */}
+                    {post.featuredImage && (
+                        <div className="single-post__feature-image">
+                            <img src={post.featuredImage} alt={post.title} />
+                        </div>
+                    )}
+
+                    {/* Article Content */}
+                    <div
+                        className="single-post__content"
+                        dangerouslySetInnerHTML={{ __html: post.content }}
+                    />
+                </main>
+
+                {/* Sidebar */}
+                <aside className="single-post-sidebar">
+                    <div className="sidebar-widget">
+                        <h4 className="sidebar-title">Recent Articles</h4>
+                        <div className="sidebar-recent-list">
+                            {recentPosts.map(rp => (
+                                <Link key={rp.id} href={`/blog/${rp.slug}`} className="sidebar-recent-card">
+                                    <div className="sidebar-recent-img">
+                                        {rp.featuredImage ? (
+                                            <img src={rp.featuredImage} alt={rp.title} />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', background: '#eee' }}></div>
+                                        )}
+                                    </div>
+                                    <div className="sidebar-recent-info">
+                                        <h5 className="sidebar-recent-title">{rp.title}</h5>
+                                        <span className="sidebar-recent-date">{formatDate(rp.createdAt)}</span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </aside>
             </div>
-
-            {/* Featured Image */}
-            {post.featuredImage && (
-                <div className="single-post__feature-image">
-                    <img src={post.featuredImage} alt={post.title} />
-                </div>
-            )}
-
-            {/* Article Content */}
-            <div
-                className="single-post__content"
-                dangerouslySetInnerHTML={{ __html: post.content }}
-            />
 
             {/* Related Posts */}
             {relatedPosts.length > 0 && (

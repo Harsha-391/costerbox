@@ -8,7 +8,6 @@ import { useCart } from "../../context/CartContext";
 import Script from "next/script";
 import { Lock, CreditCard, MapPin } from "lucide-react";
 import "../../styles/checkout.css";
-import "../../styles/checkout.css";
 
 const safePrice = (p) => {
     if (!p) return 0;
@@ -32,10 +31,11 @@ function CheckoutContent() {
 
     const [formData, setFormData] = useState({
         firstName: "", lastName: "", email: "",
-        phone: "", address: "", city: "", zip: "",
+        phone: "", address: "", city: "", state: "", zip: "",
     });
 
     const [paymentMode, setPaymentMode] = useState('full'); // 'full' or 'partial'
+    const [paymentNetworkMethod, setPaymentNetworkMethod] = useState('online'); // 'online' or 'cod'
 
     // --- INITIALIZE CHECKOUT ITEMS ---
     useEffect(() => {
@@ -130,7 +130,40 @@ function CheckoutContent() {
 
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        let newFormData = { ...formData, [name]: value };
+
+        // Mobile number validation (only digits)
+        if (name === "phone") {
+            const cleanValue = value.replace(/\D/g, '').slice(0, 10);
+            newFormData.phone = cleanValue;
+        }
+
+        // Pincode validation (only digits)
+        if (name === "zip") {
+            const cleanZip = value.replace(/\D/g, '').slice(0, 6);
+            newFormData.zip = cleanZip;
+
+            if (cleanZip.length === 6) {
+                fetch(`/api/pincode?pin=${cleanZip}`)
+                    .then(res => res.json())
+                    .then(resData => {
+                        if (resData.success && resData.data.length > 0) {
+                            const info = resData.data[0];
+                            setFormData(prev => ({
+                                ...prev,
+                                city: info.districtName || info.taluk || prev.city,
+                                state: info.stateName || prev.state
+                            }));
+                        } else {
+                            alert("Invalid PIN Code entered. Please enter a valid Indian PIN Code.");
+                        }
+                    })
+                    .catch(err => console.error("Pincode error:", err));
+            }
+        }
+
+        setFormData(newFormData);
     };
 
     const handlePayment = async (e) => {
@@ -143,7 +176,86 @@ function CheckoutContent() {
             return;
         }
 
+        if (formData.phone.length !== 10) {
+            alert("Please enter a valid 10-digit mobile number.");
+            setProcessing(false);
+            return;
+        }
+
         try {
+            const pinRes = await fetch(`/api/pincode?pin=${formData.zip}`);
+            const pinData = await pinRes.json();
+            if (!pinData.success) {
+                alert("Invalid PIN Code. Please correct it before placing the order.");
+                setProcessing(false);
+                return;
+            }
+        } catch (err) {
+            console.error("Failed to verify pincode, allowing checkout to continue...", err);
+        }
+
+        try {
+            // == COD LOGIC ==
+            if (paymentNetworkMethod === 'cod' && !hasCustomItems) {
+                const safePayload = {
+                    userId: user?.uid || "guest",
+                    userEmail: user?.email || "guest@example.com",
+                    items: itemsToCheckout.map(item => {
+                        const p = safePrice(item.price);
+                        return {
+                            id: item.id || "unknown_item",
+                            name: item.name || item.title || "Unnamed",
+                            paidPrice: p,
+                            quantity: item.quantity,
+                            selectedSize: item.selectedSize || "",
+                            image: item.featuredImage || item.media?.[0] || "/placeholder.jpg",
+                            isCustom: false,
+                            paymentType: 'full',
+                            totalItemAmount: p,
+                            dueItemAmount: p
+                        };
+                    }),
+                    shipping: { ...formData },
+                    payment: {
+                        razorpayPaymentId: "COD",
+                        razorpayOrderId: "COD",
+                        paidAmount: 0,
+                        pendingAmount: totalPayable,
+                        totalAmount: totalRaw,
+                        type: "COD"
+                    },
+                    orderId: `ORD-COD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                    status: "unpaid",
+                    isCustomOrder: false,
+                    createdAt: serverTimestamp()
+                };
+
+                const docRef = await addDoc(collection(db, "orders"), safePayload);
+
+                if (!productId) {
+                    clearCart();
+                }
+
+                // Auto-Ship logic will need to pass the doc ID to create-order
+                fetch('/api/shiprocket/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: docRef.id })
+                }).catch(console.error);
+
+                try {
+                    const utils = await import("../../utils/generateInvoice");
+                    utils.generateInvoicePDF({ ...safePayload, createdAt: { seconds: Date.now() / 1000 } });
+                    alert("Order Placed Successfully via COD! Your Invoice is downloading...");
+                } catch (pdfError) {
+                    alert("Order Placed Successfully! (Invoice download failed)");
+                }
+
+                router.push("/orders");
+                setProcessing(false);
+                return;
+            }
+
             // 1. Create Razorpay Order
             const res = await fetch("/api/razorpay", {
                 method: "POST",
@@ -271,21 +383,24 @@ function CheckoutContent() {
                     <h2><MapPin size={20} /> Shipping Details</h2>
                     <form id="checkout-form" onSubmit={handlePayment}>
                         <div className="form-row">
-                            <input name="firstName" placeholder="First Name" required className="input-field" onChange={handleChange} />
-                            <input name="lastName" placeholder="Last Name" required className="input-field" onChange={handleChange} />
+                            <input name="firstName" placeholder="First Name" value={formData.firstName} required className="input-field" onChange={handleChange} />
+                            <input name="lastName" placeholder="Last Name" value={formData.lastName} required className="input-field" onChange={handleChange} />
                         </div>
                         <div className="form-group">
                             <input name="email" type="email" placeholder="Email Address" required className="input-field" value={formData.email} onChange={handleChange} />
                         </div>
                         <div className="form-group">
-                            <input name="phone" type="tel" placeholder="Mobile Number" required className="input-field" onChange={handleChange} />
+                            <input name="phone" type="tel" placeholder="Mobile Number (10 Digits)" pattern="[0-9]{10}" maxLength="10" minLength="10" required className="input-field" value={formData.phone} onChange={handleChange} />
                         </div>
                         <div className="form-group">
-                            <input name="address" placeholder="Street Address" required className="input-field" onChange={handleChange} />
+                            <input name="address" placeholder="Street Address" required className="input-field" value={formData.address} onChange={handleChange} />
                         </div>
                         <div className="form-row">
-                            <input name="city" placeholder="City" required className="input-field" onChange={handleChange} />
-                            <input name="zip" placeholder="ZIP Code" required className="input-field" onChange={handleChange} />
+                            <input name="zip" placeholder="PIN Code" maxLength="6" required className="input-field" value={formData.zip} onChange={handleChange} />
+                        </div>
+                        <div className="form-row">
+                            <input name="city" placeholder="City" required className="input-field" value={formData.city} onChange={handleChange} />
+                            <input name="state" placeholder="State" required className="input-field" value={formData.state} onChange={handleChange} />
                         </div>
                     </form>
                 </div>
@@ -364,18 +479,44 @@ function CheckoutContent() {
                         <span>₹{totalPayable.toLocaleString('en-IN')}</span>
                     </div>
 
+                    {!hasCustomItems && (
+                        <div style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px', border: '1px solid #ddd' }}>
+                            <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>Payment Method:</h4>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={(e) => { e.preventDefault(); setPaymentNetworkMethod('online'); }}
+                                    style={{
+                                        flex: 1, padding: '10px', fontSize: '12px', borderRadius: '6px', border: paymentNetworkMethod === 'online' ? '2px solid #1a1a1a' : '1px solid #ddd',
+                                        background: paymentNetworkMethod === 'online' ? '#1a1a1a' : '#fff', color: paymentNetworkMethod === 'online' ? '#fff' : '#1a1a1a', fontWeight: 'bold', cursor: 'pointer'
+                                    }}
+                                >
+                                    Prepaid
+                                </button>
+                                <button
+                                    onClick={(e) => { e.preventDefault(); setPaymentNetworkMethod('cod'); }}
+                                    style={{
+                                        flex: 1, padding: '10px', fontSize: '12px', borderRadius: '6px', border: paymentNetworkMethod === 'cod' ? '2px solid #1a1a1a' : '1px solid #ddd',
+                                        background: paymentNetworkMethod === 'cod' ? '#1a1a1a' : '#fff', color: paymentNetworkMethod === 'cod' ? '#fff' : '#1a1a1a', fontWeight: 'bold', cursor: 'pointer'
+                                    }}
+                                >
+                                    Cash on Delivery
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         form="checkout-form"
                         disabled={processing}
                         className="btn-pay"
                     >
-                        {processing ? "Processing..." : `Pay ₹${totalPayable.toLocaleString('en-IN')}`}
-                        {!processing && <CreditCard size={18} />}
+                        {processing ? "Processing..." : paymentNetworkMethod === 'cod' && !hasCustomItems ? `Place COD Order (₹${totalPayable.toLocaleString('en-IN')})` : `Pay ₹${totalPayable.toLocaleString('en-IN')}`}
+                        {!processing && paymentNetworkMethod === 'online' && <CreditCard size={18} />}
                     </button>
 
                     <p className="secure-note">
-                        <Lock size={12} /> SSL Secure Payment via Razorpay
+                        <Lock size={12} /> {paymentNetworkMethod === 'cod' && !hasCustomItems ? 'Pay via Cash upon Delivery' : 'SSL Secure Payment via Razorpay'}
                     </p>
                 </div>
             </div>

@@ -23,11 +23,18 @@ export default function BlogPage() {
             // Fetch published posts only
             const q = query(
                 collection(db, 'blogPosts'),
-                where('status', '==', 'published'),
-                orderBy('createdAt', 'desc')
+                where('status', '==', 'published')
             );
             const snap = await getDocs(q);
             const fetchedPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Sort client-side to avoid composite index requirement
+            fetchedPosts.sort((a, b) => {
+                const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
+                const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
+                return dateB - dateA;
+            });
+
             setPosts(fetchedPosts);
 
             // Extract unique categories

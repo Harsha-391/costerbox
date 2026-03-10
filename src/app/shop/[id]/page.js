@@ -571,15 +571,15 @@ export default function ProductDetailsPage() {
                                         <>
                                             <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                                                 <td style={{ padding: '8px 0', color: '#6b7280' }}>10 inch (Standard)</td>
-                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹2,000</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹{Number(product.price || 0).toLocaleString('en-IN')}</td>
                                             </tr>
                                             <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                                                 <td style={{ padding: '8px 0', color: '#6b7280' }}>12 inch (+20% size)</td>
-                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹2,200</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹{(Number(product.price || 0) + 200).toLocaleString('en-IN')}</td>
                                             </tr>
                                             <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                                                 <td style={{ padding: '8px 0', color: '#6b7280' }}>14 inch (+40% size)</td>
-                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹2,700</td>
+                                                <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: '600' }}>₹{(Number(product.price || 0) + 700).toLocaleString('en-IN')}</td>
                                             </tr>
                                             <tr>
                                                 <td style={{ padding: '8px 0', color: '#6b7280' }}>Add-on: Tassels (Per piece)</td>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { db, storage } from '../../../../lib/firebase';
-import { collection, addDoc, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './add-product.css';
 
@@ -280,11 +280,28 @@ function AddProductContent() {
         }
     };
 
-    // ========= SUBMIT =========
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const trimmedSku = formData.sku?.trim();
+        if (!trimmedSku) {
+            alert("SKU is required.");
+            return;
+        }
+
         setLoading(true);
         try {
+            // Check for duplicate SKU
+            const skuQuery = query(collection(db, "products"), where("sku", "==", trimmedSku));
+            const skuSnap = await getDocs(skuQuery);
+            const exists = skuSnap.docs.some(doc => doc.id !== editId);
+
+            if (exists) {
+                alert(`The SKU "${trimmedSku}" is already in use by another product. Please choose a unique SKU.`);
+                setLoading(false);
+                return;
+            }
+
             let finalMedia = [...formData.media];
 
             if (imageFiles.length > 0) {

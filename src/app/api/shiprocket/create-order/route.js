@@ -101,6 +101,8 @@ export async function POST(req) {
         // Shiprocket requires specific fields.
         console.log(`Creating Shiprocket Order for ${orderId} with Pickup Location: ${pickup_location_id}`);
 
+        const isCOD = order.payment?.type === "COD";
+
         const payload = {
             order_id: orderId,
             order_date: new Date().toISOString().split('T')[0] + " 12:00", // Format YYYY-MM-DD HH:MM
@@ -115,7 +117,15 @@ export async function POST(req) {
             billing_email: order.shipping?.email || "customer@example.com",
             billing_phone: (order.shipping?.phone || "9999999999").replace(/[^0-9]/g, '').slice(-10),
             shipping_is_billing: true,
-            order_items: [
+            order_items: order.items?.length > 0 ? order.items.map(item => ({
+                name: (item.name || "Product").substring(0, 50),
+                sku: (item.sku || item.id || "SKU123").substring(0, 20),
+                units: item.quantity || 1,
+                selling_price: Number(item.paidPrice || item.price || 100),
+                discount: 0,
+                tax: 0,
+                hsn: 441112
+            })) : [
                 {
                     name: (order.product?.name || "Product").substring(0, 50),
                     sku: (order.product?.id || "SKU123").substring(0, 20),
@@ -126,8 +136,8 @@ export async function POST(req) {
                     hsn: 441112 // Dummy HSN
                 }
             ],
-            payment_method: "Prepaid",
-            sub_total: Number(order.payment?.paidAmount || order.totalAmount || 100),
+            payment_method: isCOD ? "COD" : "Prepaid",
+            sub_total: Number(isCOD ? order.payment?.pendingAmount || order.totalAmount : order.payment?.paidAmount || order.totalAmount || 100),
             length: 10, breadth: 10, height: 10, weight: 0.5
         };
 
