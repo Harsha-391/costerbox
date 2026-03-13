@@ -27,7 +27,6 @@ export default function Footer() {
           <div className="footer-col">
             <h4>Useful Links</h4>
             <ul>
-              <li><a href="/blog">Costerbox Stories</a></li>
               <li><a href="/orders">Track Your Order</a></li>
               <li><a href="/faqs">FAQs</a></li>
               <li><a href="/contact">Contact Us</a></li>

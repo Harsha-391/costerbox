@@ -20,7 +20,7 @@ export default function HomeCustomServices() {
                             </button>
                         </div>
                         <img
-                            src="https://firebasestorage.googleapis.com/v0/b/costerbox-148f2.firebasestorage.app/o/upcycle.jpg?alt=media&token=8d673061-b1f6-46c5-bca0-edee4a27d612"
+                            src="cyo.png"
                             alt="Upcycle Wardrobe"
                             className="custom-card-img"
                         />
@@ -36,7 +36,7 @@ export default function HomeCustomServices() {
                             </button>
                         </div>
                         <img
-                            src="https://firebasestorage.googleapis.com/v0/b/costerbox-148f2.firebasestorage.app/o/cyo.jpg?alt=media&token=0cfebdc8-5232-4011-8876-96935d7bb37b"
+                            src="ub.png"
                             alt="Bespoke Design"
                             className="custom-card-img"
                         />

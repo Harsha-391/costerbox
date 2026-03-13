@@ -75,6 +75,7 @@ export default function SuperAdminLayout({ children }) {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Link href="/secured/superadmin/home" style={styles.link}>🏠 Home Setup</Link>
           <Link href="/secured/superadmin" style={styles.link}>📊 Dashboard</Link>
           <Link href="/secured/superadmin/categories" style={styles.link}>📂 Categories</Link>
           <Link href="/secured/superadmin/manage-products" style={styles.link}>📦 Inventory</Link>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { db } from '../lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { useWishlist } from '../context/WishlistContext';
 import { Heart } from 'lucide-react';
 import '@/styles/home.css';
@@ -22,6 +22,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState({ state: 'idle', message: '' });
+  const [homeSettings, setHomeSettings] = useState(null);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Import addDoc and serverTimestamp from firebase/firestore if not already there
@@ -41,6 +42,12 @@ export default function HomePage() {
         const prodSnap = await getDocs(collection(db, 'products'));
         const prods = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setAllProducts(prods);
+
+        // Fetch home settings
+        const siteDoc = await getDoc(doc(db, 'siteSettings', 'home'));
+        if (siteDoc.exists()) {
+          setHomeSettings(siteDoc.data());
+        }
       } catch (err) {
         console.error('Error fetching homepage data:', err);
       } finally {
@@ -51,6 +58,10 @@ export default function HomePage() {
   }, []);
 
   // ========= DERIVE PRODUCT SECTIONS FROM TAGS =========
+  const hasManagedProducts = homeSettings?.homeProducts?.length > 0;
+  const managedProducts = hasManagedProducts 
+    ? allProducts.filter(p => homeSettings.homeProducts.includes(p.id) && String(p.status || "").toLowerCase() === 'active')
+    : [];
   const newArrivals = allProducts.filter(p =>
     Array.isArray(p.tags) && p.tags.includes('new-arrival') && p.status === 'Active'
   ).slice(0, 8);
@@ -75,7 +86,7 @@ export default function HomePage() {
   };
 
   // ========= HERO SLIDER =========
-  const heroSlides = [
+  const defaultHeroSlides = [
 
     {
       image: '/img14.jpg',
@@ -94,6 +105,22 @@ export default function HomePage() {
       align: 'center'
     }
   ];
+
+  let heroSlides = defaultHeroSlides;
+  if (homeSettings?.heroBanner) {
+    if (typeof homeSettings.heroBanner === 'string') {
+      heroSlides = [{ image: homeSettings.heroBanner, subtitle: 'Welcome to Costerbox', title: 'CRAFTED WITH LOVE\nFOR YOU', cta: 'Shop Collection', link: '/products', align: 'center' }];
+    } else if (homeSettings.heroBanner.image) {
+      heroSlides = [{
+        image: homeSettings.heroBanner.image,
+        subtitle: homeSettings.heroBanner.subtitle || 'Welcome to Costerbox',
+        title: homeSettings.heroBanner.title || 'CRAFTED WITH LOVE\nFOR YOU',
+        cta: homeSettings.heroBanner.cta || 'Shop Collection',
+        link: homeSettings.heroBanner.link || '/products',
+        align: homeSettings.heroBanner.align || 'center'
+      }];
+    }
+  }
 
   const goToSlide = useCallback((index) => {
     if (isTransitioning) return;
@@ -315,6 +342,23 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* ============ MANAGED PRODUCTS ============ */}
+      {hasManagedProducts && managedProducts.length > 0 ? (
+        <section className="section-products">
+          <div className="container">
+            <div className="section-header">
+              <h2 className="section-title">✨ Featured Collection</h2>
+              <Link href="/products" className="section-link">Shop All →</Link>
+            </div>
+            <div className="products-grid">
+              {managedProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <>
       {/* ============ 3. NEW ARRIVALS (from Firestore tags) ============ */}
       {newArrivals.length > 0 && (
         <section className="section-products">
@@ -381,6 +425,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+      )}
+      </>
       )}
 
       {/* ============ CUSTOM SERVICES ============ */}

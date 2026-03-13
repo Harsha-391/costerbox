@@ -57,22 +57,31 @@ export async function POST(req) {
             // Use sanitized email or ID.
             const pickupCode = `artisan_${artisanEmail.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)}`;
 
-            // Try to add pickup location to Shiprocket
             try {
                 await addPickupLocation({
                     pickup_location: pickupCode,
-                    name: artisan.name || "Artisan",
+                    name: (artisan.name || "Artisan").substring(0, 50),
                     email: artisan.email,
-                    phone: address.phone,
-                    address: address.line1,
+                    phone: (address.phone || "9999999999").replace(/[^0-9]/g, '').slice(-10),
+                    address: (address.line1 || "Address").substring(0, 80),
                     city: address.city,
-                    state: address.state,
+                    state: address.state || "Rajasthan",
                     country: 'India',
-                    pin_code: address.pincode
+                    pin_code: (address.pincode || "302001").toString().substring(0, 6)
                 });
             } catch (e) {
-                // Ignore if already exists (Shiprocket might error 422, which is fine)
-                console.log("Pickup location add result:", e.message);
+                const apiError = e.response?.data;
+                const errorStr = JSON.stringify(apiError || e.message);
+                
+                // If it already exists, Shiprocket usually returns a validation error on 'pickup_location'
+                // We can ignore it.
+                if (errorStr.toLowerCase().includes("exists") || errorStr.toLowerCase().includes("already") || errorStr.toLowerCase().includes("taken")) {
+                    console.log(`Pickup location ${pickupCode} already exists or handled by Shiprocket. continuing...`);
+                } else {
+                    console.error("Pickup location add FATAL error:", errorStr);
+                    // It's safer to attempt to proceed anyway because the location MIGHT exist,
+                    // but if it doesn't, createShiprocketOrder will now safely fail and return 400.
+                }
             }
             pickup_location_id = pickupCode;
         } else {
@@ -149,6 +158,16 @@ export async function POST(req) {
         let shipmentId = shipResponse.shipment_id || shipResponse.payload?.shipment_id || shipResponse.order_id;
         console.log("Order Created. Shipment ID:", shipmentId);
 
+        // Shiprocket might return 200 OK but with status_code = 0 or 400 inside the body on logical errors
+        if (!shipmentId || shipResponse.status_code === 0 || shipResponse.status_code === 400) {
+            console.error("Shiprocket API failed quietly. Response:", JSON.stringify(shipResponse));
+            return NextResponse.json({
+                success: false,
+                error: shipResponse.message || shipResponse.error || "Failed to create shipment at Shiprocket. Check pickup location or payload.",
+                details: shipResponse
+            }, { status: 400 });
+        }
+
         // 5. Generate AWB (Assign Courier) - NEW STEP
         let awbData = null;
         try {
@@ -168,11 +187,11 @@ export async function POST(req) {
 
         // 4. Update Order in Firestore
         await updateDoc(orderRef, {
-            shipmentId: shipmentId,
+            shipmentId: shipmentId || null,
             awbCode: awbData?.awb_code || null,
             courierName: awbData?.courier_name || null,
             status: 'shipped',
-            shiprocketOrderId: shipResponse.order_id
+            shiprocketOrderId: shipResponse.order_id || null
         });
 
         return NextResponse.json({ success: true, data: { ...shipResponse, awb: awbData } });
