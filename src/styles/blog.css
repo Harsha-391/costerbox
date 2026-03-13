@@ -150,6 +150,7 @@
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -162,6 +163,7 @@
     flex: 1;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -429,6 +431,7 @@
     color: #1a1a1a;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -815,15 +818,55 @@
 .blog-editor .ql-container {
     border-radius: 0 0 8px 8px;
     border-color: #ddd;
-    min-height: 350px;
+    min-height: 400px;
     font-size: 16px;
     font-family: 'Lato', sans-serif;
 }
 
 .blog-editor .ql-editor {
-    min-height: 350px;
-    line-height: 1.7;
+    min-height: 400px;
+    line-height: 1.8;
+    padding: 20px 24px;
 }
+
+/* Fix Quill resetting all margins to 0 — restore spacing between elements */
+.blog-editor .ql-editor p {
+    margin-bottom: 14px;
+}
+
+.blog-editor .ql-editor h1,
+.blog-editor .ql-editor h2,
+.blog-editor .ql-editor h3 {
+    margin-top: 28px;
+    margin-bottom: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.blog-editor .ql-editor h1 { font-size: 28px; }
+.blog-editor .ql-editor h2 { font-size: 22px; }
+.blog-editor .ql-editor h3 { font-size: 18px; }
+
+.blog-editor .ql-editor ul,
+.blog-editor .ql-editor ol {
+    padding-left: 20px;
+    margin-bottom: 14px;
+}
+
+.blog-editor .ql-editor li {
+    margin-bottom: 6px;
+}
+
+.blog-editor .ql-editor blockquote {
+    border-left: 4px solid #1a1a1a;
+    margin: 16px 0;
+    padding: 12px 20px;
+    background: #f9f9f9;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: #555;
+}
+
 
 /* Blog List (admin) */
 .blog-list__grid {
@@ -954,3 +997,84 @@
         transform: translateY(0);
     }
 }
+
+
+/* ===== BLOG POST PREVIEW MODAL ===== */
+.blog-preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: preview-fade-in 0.2s ease;
+}
+
+@keyframes preview-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.blog-preview-modal {
+    width: 100%;
+    max-width: 100%;
+    height: 94vh;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: preview-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes preview-slide-up {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Top bar inside the modal */
+.blog-preview-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Scrollable body */
+.blog-preview-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 24px 80px;
+    background: #fff;
+}
+
+/* Override single-post-wrapper padding inside preview */
+.blog-preview-body .single-post-wrapper {
+    padding: 0;
+}
+
+/* Subtle "PREVIEW MODE" watermark hint at the top */
+.blog-preview-body::before {
+    content: 'PREVIEW — Not yet published';
+    display: block;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #d97706;
+    background: #fef3c7;
+    padding: 6px 20px;
+    border-radius: 20px;
+    width: fit-content;
+    margin: 0 auto 36px;
+}

@@ -216,7 +216,7 @@ export default function ArtisanDashboard() {
           <h2 style={{ color: '#991b1b', margin: '0 0 10px 0', fontSize: '20px' }}>Account Suspended</h2>
           <p style={{ color: '#7f1d1d', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
             Your artisan account has been blacklisted for violating platform safety or design rules.
-            You cannot accept new orders. Please contact support at <strong>support@costerbox.com</strong> if you believe this is an error.
+            You cannot accept new orders. Please contact support at <strong>contact@costerbox.in</strong> if you believe this is an error.
           </p>
         </div>
       )}

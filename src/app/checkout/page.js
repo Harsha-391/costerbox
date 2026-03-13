@@ -171,7 +171,7 @@ function CheckoutContent() {
         setProcessing(true);
 
         if (!user) {
-            alert("Please login to place an order.");
+            router.push('/secured/login');
             setProcessing(false);
             return;
         }

@@ -33,7 +33,7 @@ export default function ContactPage() {
                     </div>
                     <div className="contact-info-block">
                         <h2>Inquiries</h2>
-                        <p><i className="fas fa-envelope"></i> support@costerbox.in</p>
+                        <p><i className="fas fa-envelope"></i> <a href="mailto:contact@costerbox.in">contact@costerbox.in</a></p>
                         <p><i className="fas fa-phone"></i> +91 63775 15507</p>
                     </div>
                     <div className="contact-info-block">
@@ -41,7 +41,7 @@ export default function ContactPage() {
                         <p>
                             <a href="https://instagram.com/costerbox" target="_blank" rel="noopener noreferrer">Instagram</a>
                              &nbsp;/&nbsp; 
-                            <a href="#">WhatsApp</a>
+                            <a href="https://wa.me/+916377515507" target="_blank" rel="noopener noreferrer">WhatsApp</a>
                         </p>
                     </div>
                 </div>

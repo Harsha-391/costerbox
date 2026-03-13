@@ -28,6 +28,12 @@ export default function ProductDetailsPage() {
     const [showSizeGuide, setShowSizeGuide] = useState(false);
     const [openAccordion, setOpenAccordion] = useState(null);
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false); // --- CUSTOM MODAL STATE ---
+    const [cartToast, setCartToast] = useState(''); // in-page toast
+
+    const showToast = (msg) => {
+        setCartToast(msg);
+        setTimeout(() => setCartToast(''), 2500);
+    };
 
     // --- FETCH SINGLE PRODUCT DATA ---
     useEffect(() => {
@@ -111,7 +117,7 @@ export default function ProductDetailsPage() {
     // --- CUSTOMIZED ADD TO CART ---
     const handleAddToCart = () => {
         if (!user) {
-            alert("Please login to place an order.");
+            router.push('/secured/login');
             return;
         }
 
@@ -127,22 +133,22 @@ export default function ProductDetailsPage() {
             };
 
             addToCart(customProduct, customDesc);
-            alert(`Added to cart: ${customDesc} for ₹${finalPrice}`);
+            showToast(`Added to cart: ${customDesc} for ₹${finalPrice}`);
             return;
         }
 
         // Standard Product Logic
         if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-            alert("Please select a size.");
+            showToast('Please select a size first.');
             return;
         }
         addToCart(product, selectedSize);
-        alert("Added to cart!");
+        showToast('Added to cart! 🛒');
     };
 
     const handleBuyNow = () => {
         if (!user) {
-            alert("Please login to place an order.");
+            router.push('/secured/login');
             return;
         }
 
@@ -160,7 +166,7 @@ export default function ProductDetailsPage() {
         }
 
         if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-            alert("Please select a size.");
+            showToast('Please select a size first.');
             return;
         }
         addToCart(product, selectedSize);
@@ -179,7 +185,7 @@ export default function ProductDetailsPage() {
             customDesc = `${selectedSize}`;
             baseSize = selectedSize;
         } else if (product.sizes && product.sizes.length > 0) {
-            alert("Please select a base size first.");
+            showToast('Please select a base size first.');
             return;
         }
 
@@ -484,7 +490,7 @@ export default function ProductDetailsPage() {
                         className="pdp-btn-customize-main"
                         onClick={() => {
                             if (!user) {
-                                alert("Please login to customize.");
+                                router.push('/secured/login');
                                 return;
                             }
                             setIsCustomModalOpen(true);
@@ -657,6 +663,36 @@ export default function ProductDetailsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* TOAST NOTIFICATION */}
+            {cartToast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '40px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#222',
+                    color: '#fff',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    zIndex: 99999,
+                    animation: 'fadeUp 0.3s ease',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    {cartToast}
+                    <style>{`
+                        @keyframes fadeUp {
+                            from { opacity: 0; transform: translate(-50%, 20px); }
+                            to { opacity: 1; transform: translate(-50%, 0); }
+                        }
+                    `}</style>
+                </div>
+            )}
         </div>
     );
 }

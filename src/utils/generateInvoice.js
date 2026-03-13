@@ -25,7 +25,7 @@ export const generateInvoicePDF = async (order) => {
     doc.text("C/o Kanhaiya Lal Soni, Morla Rd, Ward No 2", 14, 26);
     doc.text("Lamba Hari Singh, Tonk, Rajasthan - 304503", 14, 30);
     doc.text("GSTIN: 08AALCC8989L1ZK", 14, 35);
-    doc.text("Contact: support@costerbox.in", 14, 40);
+    doc.text("Contact: contact@costerbox.in", 14, 40);
 
     doc.line(14, 45, 196, 45); // Horizontal Line
 
@@ -61,37 +61,99 @@ export const generateInvoicePDF = async (order) => {
     const items = Array.isArray(order.items) ? order.items : [];
 
     items.forEach((item, index) => {
-        // We need to re-calculate per item because we stored only final.
-        // Assuming GST logic is consistent.
         const name = (item.name || "Item").toLowerCase();
-        // Default GST 5%
-        let hsn = "9703";
-        let rate = 0.05;
-
-        // Specific Logic per Category Reform
-        if (name.includes("hoop")) {
-            hsn = "9703";
-            rate = 0.18;
-        }
-        else if (name.includes("tote") || name.includes("bag")) { hsn = "4202"; rate = 0.05; }
-        else if (name.includes("diary") || name.includes("journal") || name.includes("notebook")) { hsn = "4820"; rate = 0.05; }
-        else if (name.includes("shirt") || name.includes("tee")) { hsn = "6109"; rate = 0.05; }
-        else if (name.includes("gamcha")) { hsn = "6302"; rate = 0.05; }
-
-        // Backward calc from Item Price (which is inclusive)
         const unitPrice = Number(item.price) || 0;
-        const startQty = Number(item.quantity) || 1;
+        const startQty  = Number(item.quantity) || 1;
 
+        // ─────────────────────────────────────────────────────────────────
+        //  GST CLASSIFICATION — as per GST 2.0 reforms
+        //  Price threshold: clothing/apparel ≤ ₹2,500 → 5%, > ₹2,500 → 18%
+        // ─────────────────────────────────────────────────────────────────
+        let hsn  = "6307"; // Sensible default for misc handcrafted textile goods
+        let rate = 0.05;   // Default 5% (most handcrafted items fall here)
+
+        // ── 1. HAND EMBROIDERY COTTON T-SHIRT / TEE (HSN 6109) ───────────
+        //    ≤ ₹2,500 → 5%  |  > ₹2,500 → 18%
+        if (name.includes("t-shirt") || name.includes("tshirt") || name.includes("tee")) {
+            hsn  = "6109";
+            rate = unitPrice > 2500 ? 0.18 : 0.05;
+        }
+
+        // ── 2. SHIRTS – Formal / Semi-Formal (HSN 6205) ──────────────────
+        //    ≤ ₹2,500 → 5%  |  > ₹2,500 → 18%
+        else if (name.includes("shirt") && !name.includes("t-shirt") && !name.includes("tshirt")) {
+            hsn  = "6205";
+            rate = unitPrice > 2500 ? 0.18 : 0.05;
+        }
+
+        // ── 3. PANTS / TROUSERS (HSN 6203 / 6204) ────────────────────────
+        //    ≤ ₹2,500 → 5%  |  > ₹2,500 → 18%
+        else if (name.includes("pant") || name.includes("trouser") || name.includes("bottom")) {
+            hsn  = "6203";
+            rate = unitPrice > 2500 ? 0.18 : 0.05;
+        }
+
+        // ── 4. JACKETS – Light / Medium (HSN 6201) ───────────────────────
+        //    ≤ ₹2,500 → 5%  |  > ₹2,500 → 18%
+        else if (name.includes("jacket") || name.includes("coat") || name.includes("blazer")) {
+            hsn  = "6201";
+            rate = unitPrice > 2500 ? 0.18 : 0.05;
+        }
+
+        // ── 5. HANDMADE DIARIES / JOURNALS / NOTEBOOKS (HSN 5810) ────────
+        //    Handcrafted textiles/embroidery category — flat 5%
+        else if (name.includes("diary") || name.includes("journal") || name.includes("notebook")) {
+            hsn  = "5810";
+            rate = 0.05;
+        }
+
+        // ── 6. COTTON GAMCHA (HSN 5208 – woven cotton fabrics) ───────────
+        //    Flat 5%
+        else if (name.includes("gamcha") || name.includes("towel")) {
+            hsn  = "5208";
+            rate = 0.05;
+        }
+
+        // ── 7. COTTON CANVAS TOTE BAGS (HSN 6307) ────────────────────────
+        //    Flat 5%
+        else if (name.includes("tote") || name.includes("bag")) {
+            hsn  = "6307";
+            rate = 0.05;
+        }
+
+        // ── 8. HOOPS / DECORATIVE WALL ART (HSN 9703) ────────────────────
+        //    Handcrafted decorative items — flat 12%
+        else if (name.includes("hoop") || name.includes("wall") || name.includes("decor")) {
+            hsn  = "9703";
+            rate = 0.12;
+        }
+
+        // ── 9. DUPATTA / STOLE / SCARF (HSN 6214) ────────────────────────
+        else if (name.includes("dupatta") || name.includes("stole") || name.includes("scarf") || name.includes("shawl")) {
+            hsn  = "6214";
+            rate = 0.05;
+        }
+
+        // ── 10. LEHENGA / SUIT / ETHNIC WEAR (HSN 6211) ──────────────────
+        //     ≤ ₹2,500 → 5%  |  > ₹2,500 → 18%
+        else if (name.includes("lehenga") || name.includes("suit") || name.includes("kurta") || name.includes("kurti") || name.includes("salwar")) {
+            hsn  = "6211";
+            rate = unitPrice > 2500 ? 0.18 : 0.05;
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        //  GST Calculation (price stored inclusive of GST)
+        // ─────────────────────────────────────────────────────────────────
         const taxableUnit = unitPrice / (1 + rate);
-        const taxUnit = unitPrice - taxableUnit;
+        const taxUnit     = unitPrice - taxableUnit;
 
-        const rowTotal = unitPrice * startQty;
-        const rowTaxable = taxableUnit * startQty;
-        const rowTax = taxUnit * startQty;
+        const rowTotal   = unitPrice    * startQty;
+        const rowTaxable = taxableUnit  * startQty;
+        const rowTax     = taxUnit      * startQty;
 
         totalTaxable += rowTaxable;
-        totalTax += rowTax;
-        grandTotal += rowTotal;
+        totalTax     += rowTax;
+        grandTotal   += rowTotal;
 
         tableRows.push([
             index + 1,
@@ -100,7 +162,7 @@ export const generateInvoicePDF = async (order) => {
             startQty,
             taxableUnit.toFixed(2),
             rowTaxable.toFixed(2),
-            `${(rate * 100)}%`,
+            `${(rate * 100).toFixed(0)}%`,
             rowTax.toFixed(2),
             rowTotal.toFixed(2)
         ]);

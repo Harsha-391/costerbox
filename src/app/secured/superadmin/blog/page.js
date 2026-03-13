@@ -10,7 +10,7 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import {
     ArrowLeft, Plus, Save, Trash2, Edit2, Eye, EyeOff,
-    Image as ImageIcon, X, Search, FileText, Tag, Clock
+    Image as ImageIcon, X, Search, FileText, Tag, Clock, ExternalLink, LayoutTemplate
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import '../../../../styles/blog.css';
@@ -49,6 +49,7 @@ export default function BlogAdminPage() {
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState('');
     const [activeTab, setActiveTab] = useState('content'); // 'content' | 'seo'
+    const [showPreview, setShowPreview] = useState(false);
 
     const fileInputRef = useRef(null);
 
@@ -362,6 +363,21 @@ export default function BlogAdminPage() {
                                     </div>
                                 </div>
                                 <div className="blog-list__item-actions" onClick={e => e.stopPropagation()}>
+                                    {post.status === 'published' && post.slug && (
+                                        <a
+                                            href={`/blog/${post.slug}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title="View Live Post"
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                width: '32px', height: '32px', borderRadius: '6px',
+                                                background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534'
+                                            }}
+                                        >
+                                            <ExternalLink size={15} />
+                                        </a>
+                                    )}
                                     <button onClick={() => startEdit(post)} title="Edit"><Edit2 size={16} /></button>
                                     <button className="delete-btn" onClick={() => handleDelete(post)} title="Delete"><Trash2 size={16} /></button>
                                 </div>
@@ -389,6 +405,26 @@ export default function BlogAdminPage() {
                     <h1>{editingPost ? 'Edit Post' : 'New Post'}</h1>
                 </div>
                 <div className="blog-editor__actions">
+                    {/* PREVIEW BUTTON — always visible in editor */}
+                    <button
+                        className="blog-editor__btn blog-editor__btn--secondary"
+                        onClick={() => setShowPreview(true)}
+                        title="Preview post as it will appear on the blog"
+                    >
+                        <LayoutTemplate size={16} /> Preview
+                    </button>
+
+                    {editingPost?.status === 'published' && editingPost?.slug && (
+                        <a
+                            href={`/blog/${editingPost.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="blog-editor__btn blog-editor__btn--secondary"
+                            style={{ textDecoration: 'none', color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+                        >
+                            <ExternalLink size={16} /> View Live Post
+                        </a>
+                    )}
                     <button
                         className="blog-editor__btn blog-editor__btn--secondary"
                         onClick={() => handleSave('draft')}
@@ -518,6 +554,7 @@ export default function BlogAdminPage() {
                             modules={quillModules}
                             formats={quillFormats}
                             placeholder="Write your article here..."
+                            style={{ minHeight: '400px' }}
                         />
                     </div>
 
@@ -614,6 +651,117 @@ export default function BlogAdminPage() {
             )}
 
             {toast && <div className="blog-toast">{toast}</div>}
+
+            {/* ============================================================ */}
+            {/* PREVIEW MODAL                                                 */}
+            {/* ============================================================ */}
+            {showPreview && (
+                <div className="blog-preview-overlay" onClick={() => setShowPreview(false)}>
+                    <div className="blog-preview-modal" onClick={e => e.stopPropagation()}>
+
+                        {/* Preview Header Bar */}
+                        <div className="blog-preview-topbar">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <LayoutTemplate size={18} color="#888" />
+                                <span style={{ fontWeight: 600, fontSize: '14px', color: '#555' }}>
+                                    Blog Post Preview
+                                </span>
+                                <span style={{
+                                    fontSize: '11px', background: '#fef3c7', color: '#92400e',
+                                    padding: '3px 10px', borderRadius: '20px', fontWeight: 700,
+                                    textTransform: 'uppercase', letterSpacing: '0.5px'
+                                }}>
+                                    Draft
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '12px', color: '#aaa' }}>
+                                    /blog/{slug || 'post-slug'}
+                                </span>
+                                <button
+                                    className="blog-editor__btn blog-editor__btn--primary"
+                                    onClick={() => { setShowPreview(false); handleSave('published'); }}
+                                    style={{ fontSize: '13px', padding: '8px 18px' }}
+                                >
+                                    <Eye size={14} /> Publish Now
+                                </button>
+                                <button
+                                    onClick={() => setShowPreview(false)}
+                                    style={{
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        padding: '6px', borderRadius: '6px', color: '#888',
+                                        display: 'flex', alignItems: 'center'
+                                    }}
+                                    title="Close preview"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Preview Content matches live blog post layout */}
+                        <div className="blog-preview-body">
+                            <div className="single-post-wrapper" style={{ maxWidth: '860px', margin: '0 auto' }}>
+
+                                {/* Category + Title */}
+                                <div className="single-post__header-area">
+                                    {category && (
+                                        <span className="single-post__category">{category}</span>
+                                    )}
+                                    <h1 className="single-post__title">
+                                        {title || <span style={{ color: '#ccc', fontStyle: 'italic' }}>No title yet</span>}
+                                    </h1>
+                                </div>
+
+                                {/* Meta bar */}
+                                <div className="single-post__meta">
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#999' }}>
+                                        <Clock size={14} /> {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#999' }}>
+                                        <Tag size={14} /> {category || 'Uncategorised'}
+                                    </span>
+                                </div>
+
+                                {/* Description / Intro */}
+                                {description && (
+                                    <p style={{
+                                        fontSize: '18px', color: '#555', lineHeight: '1.7',
+                                        borderLeft: '4px solid #1a1a1a', paddingLeft: '20px',
+                                        margin: '0 0 30px', fontStyle: 'italic'
+                                    }}>
+                                        {description}
+                                    </p>
+                                )}
+
+                                {/* Featured Image */}
+                                {featuredImageUrl && (
+                                    <div className="single-post__feature-image">
+                                        <img src={featuredImageUrl} alt={title || 'Featured'} />
+                                    </div>
+                                )}
+
+                                {/* Article Content */}
+                                {content ? (
+                                    <div
+                                        className="single-post__content"
+                                        dangerouslySetInnerHTML={{ __html: content }}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        textAlign: 'center', padding: '60px 20px',
+                                        color: '#ccc', border: '2px dashed #eee', borderRadius: '12px'
+                                    }}>
+                                        <FileText size={40} strokeWidth={1} style={{ marginBottom: '12px' }} />
+                                        <p style={{ margin: 0, fontSize: '16px' }}>No content written yet</p>
+                                    </div>
+                                )}
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

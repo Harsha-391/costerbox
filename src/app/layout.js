@@ -1,10 +1,12 @@
 /* src/app/layout.js */
 import '../styles/globals.css';
+import { Suspense } from 'react';
 import { AuthProvider } from '../context/AuthContext';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
+import ConditionalFooter from '../components/ConditionalFooter';
 import PromoStrip from '../components/PromoStrip';
 import ConditionalInstagramReels from '../components/ConditionalInstagramReels';
+import PageLoader from '../components/PageLoader';
 
 export const metadata = {
   title: 'Costerbox | Handcrafted Artistry',
@@ -30,6 +32,11 @@ export default function RootLayout({ children }) {
               {/* 0. Promo Strip — above header */}
 
 
+              {/* Page loader — shows GIF on every navigation */}
+              <Suspense fallback={null}>
+                <PageLoader />
+              </Suspense>
+
               {/* 1. Header is now global */}
               <Header />
 
@@ -41,8 +48,8 @@ export default function RootLayout({ children }) {
               {/* 3. Instagram Reels (only on Home & About) */}
               <ConditionalInstagramReels />
 
-              {/* 4. Footer is now global */}
-              <Footer />
+              {/* 4. Footer — hidden on admin/secured pages */}
+              <ConditionalFooter />
             </CartProvider>
           </WishlistProvider>
         </AuthProvider>

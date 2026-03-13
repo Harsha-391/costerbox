@@ -2,17 +2,19 @@
 "use client";
 import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { useRouter } from 'next/navigation';
 import ChatWindow from '../../../components/ChatWindow';
 import { MessageCircle, Upload, Scissors, Sparkles, CheckCircle } from 'lucide-react';
 import '../../../styles/custom.css';
 
 export default function UpcyclePage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleStart = () => {
         if (!user) {
-            alert("Please login to start a consultation.");
+            router.push('/secured/login');
             return;
         }
         setIsChatOpen(true);

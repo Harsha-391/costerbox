@@ -1,7 +1,7 @@
 /* src/app/shop/page.js */
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from '../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ import '../../styles/shop.css';
 
 function ShopPageContent() {
     const { user } = useAuth();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const catFromUrl = searchParams.get('cat');
 
@@ -68,7 +69,7 @@ function ShopPageContent() {
     // --- HANDLER: OPEN CHAT ---
     const handleOpenChat = (product) => {
         if (!user) {
-            alert("Please login to customize this product.");
+            router.push('/secured/login');
             return;
         }
         setActiveChatProduct(product);
