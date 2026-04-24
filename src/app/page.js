@@ -314,8 +314,15 @@ export default function HomePage() {
           <div
             key={index}
             className={`hero-slide ${index === currentSlide ? 'active' : ''}`}
-            style={{ backgroundImage: `url(${slide.image})` }}
           >
+            <Image
+              src={slide.image}
+              alt={slide.subtitle || 'Hero Banner'}
+              fill
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
+              priority={index === 0}
+              sizes="100vw"
+            />
             <div className="hero-overlay" />
             <div className={`hero-content hero-${slide.align}`}>
               <span className="hero-subtitle">{slide.subtitle}</span>
