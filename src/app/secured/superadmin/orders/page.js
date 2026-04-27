@@ -14,6 +14,7 @@ export default function AdminOrdersPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortOrder, setSortOrder] = useState("desc"); // newest first
+    const [delhiveryLoading, setDelhiveryLoading] = useState(false);
 
     // Bulk Select states
     const [selectedIds, setSelectedIds] = useState([]);
@@ -104,7 +105,7 @@ export default function AdminOrdersPage() {
 
     const handleShip = async () => {
         if (!editingOrder) return;
-        if (!window.confirm(`Ship Order #${editingOrder.orderId || editingOrder.id}?`)) return;
+        if (!window.confirm(`Ship Order #${editingOrder.orderId || editingOrder.id} via Shiprocket?`)) return;
         try {
             const res = await fetch('/api/shiprocket/create-order', {
                 method: 'POST',
@@ -113,11 +114,40 @@ export default function AdminOrdersPage() {
             });
             const data = await res.json();
             if (data.success) {
-                alert("Shipment Created!");
+                alert("Shiprocket shipment created!");
                 setEditingOrder(null);
                 fetchOrders();
             } else alert(`Failed: ${data.message || data.error}`);
-        } catch (e) { alert("Error creating shipment"); }
+        } catch (e) { alert("Error creating Shiprocket shipment"); }
+    };
+
+    const handleDelhiveryShip = async () => {
+        if (!editingOrder) return;
+        if (!editingOrder.artisanEmail) {
+            alert("This order has no artisan linked. Delhivery requires the artisan's pickup address.");
+            return;
+        }
+        if (!window.confirm(`Create Delhivery consignment for Order #${editingOrder.orderId || editingOrder.id}?\n\nPickup will be from artisan: ${editingOrder.artisanEmail}`)) return;
+        setDelhiveryLoading(true);
+        try {
+            const res = await fetch('/api/delhivery/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: editingOrder.id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Delhivery consignment created!\nWaybill: ${data.waybill}\nArtisan: ${data.artisan}`);
+                setEditingOrder(null);
+                fetchOrders();
+            } else {
+                alert(`Delhivery Failed: ${data.error}`);
+            }
+        } catch (e) {
+            alert("Error creating Delhivery consignment");
+        } finally {
+            setDelhiveryLoading(false);
+        }
     };
 
     const handleUpdateStatus = async (e) => {
@@ -261,7 +291,7 @@ export default function AdminOrdersPage() {
                     <div style={modalBox}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
                             <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Order Details</h2>
-                            <button onClick={() => setEditingOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✕</button>
+                            <button onClick={() => { setEditingOrder(null); setDelhiveryLoading(false); }} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✕</button>
                         </div>
 
                         {/* Notification for Remaining 30% */}
@@ -281,9 +311,34 @@ export default function AdminOrdersPage() {
                             </div>
                         )}
 
-                        {/* Shipping logic */}
+                        {/* Shipping options */}
                         {editingOrder.status !== 'shipped' && (
-                            <button onClick={handleShip} style={shipBtn}><Truck size={16} /> Create Shiprocket Shipment</button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
+                                <button onClick={handleShip} style={shipBtn}>
+                                    <Truck size={16} /> Create Shiprocket Shipment
+                                </button>
+
+                                <div style={{ border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px', background: '#f0fdf4' }}>
+                                    <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '700', color: '#065f46' }}>
+                                        Delhivery — Artisan Pickup
+                                    </p>
+                                    <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#047857' }}>
+                                        Pickup from: <strong>{editingOrder.artisanEmail || '—'}</strong>
+                                    </p>
+                                    {!editingOrder.artisanEmail && (
+                                        <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#b45309', background: '#fef3c7', padding: '6px 8px', borderRadius: '4px' }}>
+                                            No artisan linked to this order. Assign an artisan first.
+                                        </p>
+                                    )}
+                                    <button
+                                        onClick={handleDelhiveryShip}
+                                        disabled={delhiveryLoading || !editingOrder.artisanEmail}
+                                        style={{ ...shipBtn, background: editingOrder.artisanEmail ? '#059669' : '#9ca3af', opacity: delhiveryLoading ? 0.7 : 1 }}
+                                    >
+                                        <Truck size={16} /> {delhiveryLoading ? 'Creating...' : 'Create Delhivery Consignment'}
+                                    </button>
+                                </div>
+                            </div>
                         )}
 
                         <form onSubmit={handleUpdateStatus} style={{ marginTop: '20px' }}>
